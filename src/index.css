@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-bg-dark: var(--bg-dark);
+  --color-card-bg: var(--card-bg);
+  --color-border-amber: var(--border-color);
+  
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --primary: #f59e0b;
+  --primary-dark: #b45309;
+  --bg-dark: #070707;
+  --card-bg: #111111;
+  --border-color: rgba(245, 158, 11, 0.2);
+}
+
+/* Theme definitions */
+[data-theme='matrix'] {
+  --primary: #00ff41;
+  --primary-dark: #008f11;
+  --bg-dark: #000000;
+  --card-bg: #0a0a0a;
+  --border-color: rgba(0, 255, 65, 0.2);
+}
+
+[data-theme='minimal'] {
+  --primary: #ffffff;
+  --primary-dark: #a1a1aa;
+  --bg-dark: #121212;
+  --card-bg: #1e1e1e;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='deep-ocean'] {
+  --primary: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --bg-dark: #020617;
+  --card-bg: #0f172a;
+  --border-color: rgba(59, 130, 246, 0.2);
+}
+
+[data-theme='harry-potter'] {
+  --primary: #ffd700;
+  --primary-dark: #b8860b;
+  --bg-dark: #1a0f0f;
+  --card-bg: #2d1a1a;
+  --border-color: rgba(255, 215, 0, 0.2);
+}
+
+[data-theme='marvel'] {
+  --primary: #ed1d24;
+  --primary-dark: #990000;
+  --bg-dark: #1a0000;
+  --card-bg: #2a0000;
+  --border-color: rgba(237, 29, 36, 0.2);
+}
+
+[data-theme='loki'] {
+  --primary: #00ff88;
+  --primary-dark: #008855;
+  --bg-dark: #0b1a0b;
+  --card-bg: #0d210d;
+  --border-color: rgba(0, 255, 136, 0.2);
+}
+
+[data-theme='winamp'] {
+  --primary: #c0c0c0;
+  --primary-dark: #808080;
+  --bg-dark: #1a1a3a;
+  --card-bg: #2a2a5a;
+  --border-color: rgba(192, 192, 192, 0.3);
+}
+
+@layer base {
+  body {
+    @apply bg-bg-dark text-gray-400 font-sans antialiased overflow-x-hidden;
+  }
+  
+  .os-grid {
+    background-image: radial-gradient(circle at center, var(--primary) 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+    opacity: 0.1;
+  }
+}
+
+@layer components {
+  .os-card {
+    @apply bg-card-bg border border-border-amber rounded-sm p-8 mb-8 shadow-[0_4px_20px_rgba(0,0,0,0.5)];
+  }
+  
+  .os-section-title {
+    @apply text-primary font-black text-xl uppercase tracking-[0.15em] mb-8 flex items-center gap-3 italic;
+  }
+
+  .os-input {
+    @apply bg-black border border-border-amber rounded-sm px-4 py-3 text-primary font-mono text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 placeholder:text-gray-800 uppercase tracking-tight;
+  }
+
+  .os-button {
+    @apply border border-primary/40 text-primary px-6 py-2 uppercase tracking-[0.2em] text-[10px] font-bold hover:bg-primary hover:text-black transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-primary/30 active:scale-95;
+  }
+
+  .os-checkbox {
+    @apply w-5 h-5 border border-primary/40 bg-black checked:bg-primary appearance-none cursor-pointer relative after:content-[''] after:absolute after:hidden checked:after:block after:left-1.5 after:top-0.5 after:w-1.5 after:h-3 after:border-r-2 after:border-b-2 after:border-black after:rotate-45 transition-all duration-200;
+  }
+
+  .glass-panel {
+    @apply bg-primary/5 border border-primary/10 rounded-sm backdrop-blur-sm;
+  }
+}

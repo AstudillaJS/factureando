@@ -1,0 +1,4 @@
+Fecha,Tipo_Comprobante,Documento_Tipo,Documento_Nro,Condicion_IVA,Concepto,Importe_Total
+"YYYY-MM-DD","Factura C","CUIT","20111111112","Monotributo","Servicios","15000.00"
+"YYYY-MM-DD","Factura C","DNI","35111222","Consumidor Final","Productos","5000.00"
+"YYYY-MM-DD","Factura A","CUIT","30111111118","Responsable Inscripto","Servicios","25000.00"

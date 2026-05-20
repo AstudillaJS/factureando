@@ -1,0 +1,6 @@
+{
+  "name": "Chronos Labor OS",
+  "description": "Billing automation and database integration system with AFIP (ARCA) support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,62 @@
+export default function MonotributoProjection() {
+  const annualTotal = 2188905190.00;
+  const nextCatStart = 6450001.00;
+  const projection = 4727517126.33;
+
+  return (
+    <div className="os-card !p-8 relative overflow-hidden">
+      <div className="flex justify-between items-center mb-10">
+        <div className="flex items-center gap-4">
+          <h2 className="text-primary font-black text-sm tracking-[0.3em] uppercase italic">PROYECCIÓN CATEGORÍA MONOTRIBUTO</h2>
+          <span className="bg-primary text-black text-[10px] px-2 py-0.5 font-bold rounded-xs">CAT A</span>
+        </div>
+        <span className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">ÚLTIMOS 12 MESES</span>
+      </div>
+
+      <div className="w-full h-1.5 bg-gray-900 rounded-full mb-10 overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
+        <div className="h-full bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]" style={{ width: '100%' }}></div>
+      </div>
+
+      <div className="flex justify-between items-center mb-12">
+        <div>
+          <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-2 font-bold">TOTAL FACTURADO (12M):</span>
+          <span className="text-3xl font-black text-green-500 tracking-tighter">$ {annualTotal.toLocaleString('es-AR')}</span>
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-2 font-bold">PRÓXIMA CAT (B) DESDE:</span>
+          <span className="text-2xl font-black text-white/90 tracking-tighter">$ {nextCatStart.toLocaleString('es-AR')}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        <div className="glass-panel p-6 border-l-4 border-l-amber-500/50">
+          <div className="flex items-center gap-2 mb-3">
+             <div className="w-3 h-0.5 bg-amber-500"></div>
+             <span className="text-[10px] text-amber-500 font-black uppercase tracking-widest">PROYECCIÓN ANUALIZADA (ARCA)</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-3xl font-black text-white tracking-tighter">$ 4.727.517.126,33</span>
+            <span className="text-[9px] text-gray-600 uppercase font-mono mt-2">Basado en 169 días de actividad.</span>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-end">
+             <span className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">SALDO PARA MANTENER CATEGORÍA A:</span>
+             <span className="text-xs font-mono text-red-600">$ -4.721.067.126,33</span>
+          </div>
+          
+          <div className="bg-red-950/30 border border-red-900/50 p-4 flex items-center gap-4">
+             <div className="w-4 h-4 bg-red-600 flex items-center justify-center shrink-0">
+               <span className="text-[10px] font-black text-black">!</span>
+             </div>
+             <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] text-red-500 font-black uppercase tracking-widest">ALERTA: HAS EXCEDIDO EL LÍMITE DE TU CATEGORÍA (A). DEBERÍAS ESTAR EN:</span>
+                <span className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 uppercase tracking-widest">RÉGIMEN GENERAL / EXCEDIDO</span>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
