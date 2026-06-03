@@ -6,93 +6,90 @@ Este manual detalla la estructura, funcionamiento y procedimientos operativos pa
 
 ## 1. Arquitectura y Almacenamiento Local
 
-La aplicación está construida como una aplicación híbrida de escritorio usando **Electron** como contenedor, **React (Vite)** para la interfaz y **Express (Node.js)** para el backend local y la lógica de integración.
+La aplicación está construida como una aplicación híbrida de escritorio usando **Electron** como contenedor, **React (Vite)** para la interfaz y **Express (Node.js)** para el backend local y la lógica de integración con AFIP y Mercado Pago.
 
 ### Ubicación de los Datos
-Para garantizar la privacidad y permitir un funcionamiento inicial 100% local, el sistema almacena su información en el directorio del proyecto:
-*   **Base de datos local:** `data/db.json` (Guarda configuraciones, historial de facturas y tokens).
-*   **Certificados AFIP:** `data/certs/` (Almacena los archivos `.crt` y `.key` subidos por el cliente).
-*   **Respaldos automáticos de compilación:** Cada vez que se compila el proyecto (`npm run build`), el script `backup-dist.cjs` guarda una copia de la carpeta `dist` previa en `Versiones anteriores/dist-backup-FECHA`.
+Para garantizar la privacidad y permitir un funcionamiento inicial 100% local, el sistema almacena su información en el directorio de datos de usuario de la aplicación:
+*   **Ruta en Windows (Producción):** `%APPDATA%\Factureando\` (típicamente `C:\Users\USUARIO\AppData\Roaming\Factureando\`)
+*   **Base de datos local:** `db.json` dentro de la ruta anterior. Almacena las configuraciones (`config`), el historial de comprobantes (`invoices`) y el listado de clientes (`clients`).
+*   **Certificados AFIP:** `certs/` (almacena el certificado público `.crt` firmado y la clave privada `.key`).
+*   **Respaldos automáticos de compilación:** Cada vez que se compila el proyecto (`npm run build`), el script `backup-dist.cjs` crea automáticamente una copia de la carpeta `dist` anterior en la carpeta raíz `Versiones anteriores/dist-backup-FECHA`.
 
 ---
 
-## 2. Flujo de Trabajo en Desarrollo
+## 2. Configuración Fiscal y Emisión en AFIP
 
-Para trabajar en el código respetando la filosofía de **GitFlow**:
+El sistema permite la facturación electrónica interactuando directamente con los servidores de la Administración Federal de Ingresos Públicos (ARCA/AFIP).
 
-1.  **Ramas de Desarrollo:** Toda nueva característica o corrección debe realizarse en ramas derivadas de `develop` (ej. `feature/nueva-funcion` o `hotfix/error-afip`).
-2.  **Pruebas locales:** Para iniciar el entorno de desarrollo conjunto (Vite + Express Server + Electron) ejecuta:
+### Entorno y Certificados
+1.  **Modo Homologación vs. Producción:** configurable desde el panel de control. El modo de homologación (pruebas) no tiene validez legal y se utiliza para testear. El modo de producción interactúa con los servidores reales de AFIP.
+2.  **Carga de Certificados:** A través de la interfaz "Configuración Fiscal", el usuario puede seleccionar el archivo `.crt` y `.key` directamente. Electron captura la ruta absoluta física y la guarda de forma segura en `db.json`.
+
+### Cierre de Lote (Emisión Masiva de Borradores)
+Cuando se finaliza una jornada de trabajo en la terminal, los registros se guardan en la base de datos con el estado `"status": "pending"` (Borradores). Para transformarlos en facturas oficiales de AFIP:
+1.  **Ingreso a Historial:** Dirigirse al panel de "Historial de Facturación".
+2.  **Selección de Borradores:** La interfaz cuenta con casillas de verificación (checkboxes) que permiten marcar borradores individuales o seleccionar todos para el lote.
+3.  **Botón "Cerrar Lote":** Al hacer clic, se inicia un proceso secuencial en segundo plano que consume el endpoint `/api/afip/emit-invoice`.
+4.  **Estado de Emisión:** AFIP devuelve el código de autorización electrónica (CAE), su vencimiento y el número de comprobante oficial. El sistema actualiza el estado de la factura a `"status": "emitted"` en `db.json` y almacena estos metadatos.
+5.  **Barra de Progreso:** Se muestra visualmente el avance del lote y, al finalizar, un desglose de comprobantes emitidos exitosamente y posibles errores de comunicación.
+
+---
+
+## 3. Personalización y Generación de PDF (A4)
+
+El sistema incluye un generador de PDFs integrado ([pdfGenerator.ts](file:///c:/Users/astud/OneDrive/LYNX/Factureando/src/utils/pdfGenerator.ts)) diseñado para emitir las facturas bajo la normativa oficial, incluyendo los detalles de la empresa, el logotipo personalizado y la marca de la consultora.
+
+1.  **Carga de Logotipo:** En el módulo "Diseño de Factura", el usuario puede subir un logotipo en formato PNG o JPG. Este se almacena en base64 dentro de la configuración de `db.json` (`invoiceLogo`).
+2.  **Pie de página Institucional:** Todas las facturas PDF generadas incorporan de forma obligatoria en la sección inferior la leyenda **"Powered by Lynx Consulting"** y el logotipo institucional de la consultora.
+3.  **Visualización:** Al hacer clic en "Ver PDF" o "Regenerar PDF", el sistema construye el documento dinámicamente y lo abre en el navegador predeterminado del sistema operativo.
+
+---
+
+## 4. Flujo de Desarrollo y Sincronización en Git
+
+Para garantizar la estabilidad del proyecto y el correcto funcionamiento de las reglas de GitHub, se deben seguir las siguientes normativas de código:
+
+### Gestión de Credenciales y Seguridad (Push Protection)
+*   **Regla Estricta:** **Bajo ninguna circunstancia se deben subir tokens de acceso de GitHub (`ghp_...`) al repositorio.**
+*   Los scripts de automatización de releases ([publish.cjs](file:///c:/Users/astud/OneDrive/LYNX/Factureando/publish.cjs), [publish-release.cjs](file:///c:/Users/astud/OneDrive/LYNX/Factureando/publish-release.cjs) y [patch-release.cjs](file:///c:/Users/astud/OneDrive/LYNX/Factureando/patch-release.cjs)) están configurados para leer el token dinámicamente desde el entorno usando `process.env.GH_TOKEN`.
+*   Para realizar operaciones que requieran privilegios de publicación, define la variable temporalmente en tu consola antes de ejecutar los comandos.
+
+### Flujo de GitFlow
+1.  **Rama de Trabajo:** Trabajar y probar las funcionalidades en la rama `develop`.
+2.  **Verificación de Tipos:** Antes de commitear, ejecuta el chequeo estático de TypeScript para garantizar que no existan referencias nulas ni errores de importación:
     ```bash
-    npm run dev
+    npx tsc --noEmit
     ```
-    *Nota: Si estás usando PowerShell, asegúrate de correrlo desde una terminal CMD o tener las políticas de ejecución de scripts habilitadas.*
-
-3.  **Integración:** Una vez probado el código, se fusiona a `develop` y finalmente a `main` cuando esté listo para producción.
+3.  **Commit y Push:** 
+    ```bash
+    git add .
+    git commit -m "feat/fix: descripción clara del cambio"
+    git push origin develop
+    ```
 
 ---
 
-## 3. Guía de Lanzamiento y Actualizaciones Automáticas (Auto-Updates)
+## 5. Lanzamiento de Actualizaciones (Auto-Updates)
 
-Para responder a tu pregunta de **¿Cómo notificar y actualizar a todas las personas que lo tengan instalado automáticamente?**, este es el procedimiento detallado paso a paso usando la vinculación con **GitHub Releases**:
+Para notificar y actualizar a todas las personas que tengan instalada la aplicación de escritorio de forma 100% automática:
 
-### Configuración Única (Preparación del canal de actualizaciones)
-1.  **Repositorio en la nube:** Asegúrate de que el código esté en un repositorio público o privado en tu GitHub.
-2.  **Actualizar package.json:** Reemplaza `"TuUsuarioDeGitHub"` por tu usuario real de GitHub en la sección:
-    ```json
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "TuUsuarioDeGitHub",
-        "repo": "factureando"
-      }
-    ]
+### Paso 1: Configuración de la Versión
+*   Incrementa el número de versión en el archivo [package.json](file:///c:/Users/astud/OneDrive/LYNX/Factureando/package.json) (línea 4, ej. de `1.0.19` a `1.0.20`).
+
+### Paso 2: Ejecución del Release
+1.  Abre una consola (CMD o PowerShell).
+2.  Establece tu token de GitHub con permisos de escritura en la sesión:
+    *   **En CMD:** `set GH_TOKEN=tu_token_de_github_aqui`
+    *   **En PowerShell:** `$env:GH_TOKEN="tu_token_de_github_aqui"`
+3.  Lanza el proceso de compilación y publicación:
+    ```bash
+    npm run release
     ```
 
-### Procedimiento para lanzar una nueva versión (Paso a MAIN)
+Este comando compila el bundle de producción de React, empaqueta el servidor Express en `dist/server.cjs`, realiza una copia de seguridad en `Versiones anteriores/` y genera el instalador autoinstalable `.exe` de Windows, subiéndolo automáticamente como un nuevo Release a GitHub en estado público.
 
-Cuando decidas lanzar una actualización y quieras que les llegue la notificación a tus clientes:
-
-#### Paso 1: Fusionar cambios y actualizar versión
-1. Fusiona tu rama `develop` a la rama `main` de producción.
-2. Incrementa el número de versión en el archivo `package.json` (ej: cambiar `"version": "1.0.0"` por `"version": "1.0.1"`).
-
-#### Paso 2: Configurar tu Token de Acceso (GH_TOKEN)
-Para que el compilador pueda subir el archivo `.exe` directamente a tu cuenta de GitHub, necesitas proveerle un token temporal en tu terminal de comandos (se genera en GitHub -> Settings -> Developer Settings -> Personal Access Tokens).
-*   **En Windows CMD (Terminal):**
-    ```cmd
-    set GH_TOKEN=tu_token_secreto_aqui
-    ```
-*   **En PowerShell:**
-    ```powershell
-    $env:GH_TOKEN="tu_token_secreto_aqui"
-    ```
-
-#### Paso 3: Compilar y Publicar en GitHub
-Ejecuta el script de lanzamiento que creamos:
-```bash
-npm run release
-```
-Este comando realizará las siguientes tareas automáticamente:
-1. Creará un backup de la versión anterior en la carpeta `Versiones anteriores`.
-2. Compilará el código React y el servidor Express (`npm run build`).
-3. Creará el instalador `.exe` optimizado para Windows.
-4. **Subirá el instalador `.exe` directamente a tu repositorio de GitHub como un borrador de Release (Draft Release).**
-
-#### Paso 4: Publicar el Release en GitHub
-1. Entra a tu repositorio en GitHub y ve a la sección de **Releases**.
-2. Verás la nueva versión (ej. `v1.0.1`) guardada como Borrador con el archivo `.exe` adjunto.
-3. Haz clic en **Edit** y luego en **Publish Release** (Publicar).
-
----
-
-## 4. ¿Cómo reciben la alerta los clientes?
-
-El sistema de actualización que programamos en `electron-main.cjs` funciona de la siguiente manera:
-
-1.  **Detección:** Cada vez que un usuario abre la aplicación instalada, Electron consulta de manera silenciosa a GitHub si hay una versión superior a la que tiene instalada (compara el número de versión).
-2.  **Notificación de Descarga:** Si detecta una nueva versión (ej: `1.0.1`), muestra una ventana emergente en pantalla:
-    > *"¡Nueva versión de CHRONOS LABOR OS disponible! Descargando..."*
-3.  **Descarga en segundo plano:** El sistema descarga automáticamente la actualización en segundo plano sin interrumpir el trabajo del usuario.
-4.  **Instalación:** Una vez finalizada la descarga, el sistema le muestra un mensaje claro al usuario:
-    > *"Una nueva versión ha sido descargada. ¿Deseas reiniciar la aplicación para aplicar las actualizaciones ahora?"*
-5.  **Reinicio:** Si el usuario acepta, la aplicación se cierra sola, instala la nueva versión en segundos y vuelve a abrirse actualizada. Todo esto ocurre de forma transparente y sin que el usuario tenga que volver a descargar manualmente el instalable de internet.
+### Paso 3: Recepción por parte de los clientes
+1.  Al abrir la aplicación instalada, Electron consulta silenciosamente a GitHub si hay una versión superior en las Releases.
+2.  Si la encuentra, descarga el instalador en segundo plano de manera imperceptible.
+3.  Una vez completada la descarga, lanza un cuadro de diálogo al usuario invitándole a reiniciar para instalar la actualización.
+4.  Al aceptar, la aplicación se cierra, instala la nueva versión en segundos y se vuelve a abrir completamente actualizada con todas las bases de datos locales intactas.
