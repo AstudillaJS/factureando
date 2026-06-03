@@ -53,14 +53,14 @@ function createWindow() {
       log.info("Iniciando servidor Express en producción...");
       const { startServer } = require('./dist/server.cjs');
       startServer().then(() => {
-        log.info("Servidor Express iniciado en el puerto 3000. Cargando URL...");
-        mainWindow.loadURL('http://localhost:3000');
+        log.info("Servidor Express iniciado en el puerto 3010. Cargando URL...");
+        mainWindow.loadURL('http://localhost:3010');
       }).catch(err => {
         log.error("Error al iniciar el servidor Express:", err);
         mainWindow.webContents.openDevTools();
       });
     } else {
-      mainWindow.loadURL('http://localhost:3000');
+      mainWindow.loadURL('http://localhost:3010');
     }
   } catch (err) {
     log.error("Error en bloque try-catch iniciando Express:", err);

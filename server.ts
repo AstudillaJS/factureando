@@ -24,7 +24,7 @@ const upload = multer({ storage });
 
 export async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = 3010;
 
   app.use(express.json());
 
@@ -329,10 +329,18 @@ export async function startServer() {
     });
   }
 
-  return new Promise<void>((resolve) => {
-    app.listen(PORT, "0.0.0.0", () => {
+  return new Promise<void>((resolve, reject) => {
+    const server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
       resolve();
+    });
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        console.warn(`Port ${PORT} is already in use. Assuming another instance is running.`);
+        resolve();
+      } else {
+        reject(err);
+      }
     });
   });
 }
