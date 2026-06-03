@@ -318,6 +318,14 @@ export default function FiscalCluster() {
               <option value="Categoría C">Categoría C</option>
             </select>
           </div>
+          <div className="col-span-2">
+            <OSField 
+              label="TOKEN DE ACCESO AFIP SDK (OBTENIDO DE AFIPSDK.COM)" 
+              value={config.afipToken || ''} 
+              onChange={(val) => updateField('afipToken', val)}
+              placeholder="Ej: pegá tu access_token de afipsdk.com"
+            />
+          </div>
         </div>
 
         <div className="flex justify-between items-center">
