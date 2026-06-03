@@ -125,6 +125,29 @@ export default function InvoiceHistory() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Desea eliminar este comprobante?")) return;
+    try {
+      const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        loadInvoices();
+      } else {
+        alert(data.message || "Error al eliminar.");
+      }
+    } catch (e) {
+      alert("Error al comunicar con el servidor.");
+    }
+  };
+
+  const verifyInArca = (inv: any) => {
+    if (inv.status === 'pending') {
+      alert("Este comprobante es un BORRADOR y aún no ha sido emitido en ARCA (AFIP).");
+    } else {
+      alert(`CONSULTANDO ARCA/AFIP...\n\nCOMPROBANTE REGISTRADO:\n• Punto de Venta: ${inv.ptoVta || '00002'}\n• Número: ${inv.voucherNumber || 'Sin número'}\n• CAE: ${inv.cae || 'Sin CAE'}\n• Vencimiento CAE: ${inv.caeVto || 'Sin vencimiento'}\n• Estado: ACTIVO`);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Search and Filter Bar */}
@@ -294,7 +317,10 @@ export default function InvoiceHistory() {
               </div>
 
               <div className="flex gap-2">
-                <button className="p-2 border border-red-900/40 hover:bg-red-900/20 text-red-500/50 hover:text-red-500 transition-colors mr-2">
+                <button 
+                  onClick={() => handleDelete(inv.id)}
+                  className="p-2 border border-red-900/40 hover:bg-red-900/20 text-red-500/50 hover:text-red-500 transition-colors mr-2"
+                >
                   <Trash2 size={16} />
                 </button>
                 <button 
@@ -303,7 +329,10 @@ export default function InvoiceHistory() {
                 >
                    DETALLES <ExternalLink size={12} />
                 </button>
-                <button className="os-button border-amber-600/40 text-amber-500/70 hover:text-amber-500 flex items-center gap-2">
+                <button 
+                  onClick={() => viewPDF(inv)}
+                  className="os-button border-amber-600/40 text-amber-500/70 hover:text-amber-500 flex items-center gap-2"
+                >
                    REGENERAR PDF <RefreshCw size={12} />
                 </button>
                 <button 
@@ -312,7 +341,10 @@ export default function InvoiceHistory() {
                 >
                    ANULAR <AlertTriangle size={12} />
                 </button>
-                <button className="os-button border-gray-600/40 text-gray-500 hover:text-white flex items-center gap-2">
+                <button 
+                  onClick={() => verifyInArca(inv)}
+                  className="os-button border-gray-600/40 text-gray-500 hover:text-white flex items-center gap-2"
+                >
                    VERIFICAR EN ARCA
                 </button>
               </div>

@@ -48,6 +48,18 @@ export async function startServer() {
     res.json({ success: true, message: "Factura registrada localmente" });
   });
 
+  app.delete("/api/invoices/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      const db = readDb();
+      db.invoices = db.invoices.filter((inv: any) => inv.id !== id);
+      writeDb(db);
+      res.json({ success: true, message: "Factura eliminada." });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Error al eliminar factura." });
+    }
+  });
+
   // --- Endpoints de AFIP --- //
 
   // Subir certificados
@@ -63,7 +75,7 @@ export async function startServer() {
 
   app.get("/api/logs", (req, res) => {
     try {
-      const logPath = path.join(process.env.APPDATA || process.env.USERPROFILE || '.', 'factureando', 'logs', 'main.log');
+      const logPath = path.join(DATA_DIR, 'logs', 'main.log');
       if (fs.existsSync(logPath)) {
         const content = fs.readFileSync(logPath, 'utf8');
         const lines = content.split('\n').filter(l => l.trim().length > 0).slice(-100).reverse();
@@ -85,7 +97,14 @@ export async function startServer() {
             origin: 'SISTEMA',
             message: line
           };
-        }).filter(log => log.type === 'ERROR');
+        }).filter(log => 
+          log.type === 'ERROR' || 
+          log.type === 'WARN' || 
+          log.message.toLowerCase().includes('error') || 
+          log.message.toLowerCase().includes('fail') || 
+          log.message.toLowerCase().includes('uncaught') ||
+          log.message.includes('Level: 3')
+        );
         
         res.json({ success: true, logs });
       } else {
@@ -99,7 +118,7 @@ export async function startServer() {
 
   app.delete("/api/logs", (req, res) => {
     try {
-      const logPath = path.join(process.env.APPDATA || process.env.USERPROFILE || '.', 'factureando', 'logs', 'main.log');
+      const logPath = path.join(DATA_DIR, 'logs', 'main.log');
       if (fs.existsSync(logPath)) {
         fs.writeFileSync(logPath, '');
       }
