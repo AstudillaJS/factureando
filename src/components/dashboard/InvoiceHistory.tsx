@@ -12,6 +12,8 @@ export default function InvoiceHistory() {
   const [batchProgress, setBatchProgress] = useState({ total: 0, current: 0 });
   const [selectedDrafts, setSelectedDrafts] = useState<string[]>([]);
 
+  const [config, setConfig] = useState<any>(null);
+
   const loadInvoices = () => {
     fetch('/api/invoices')
       .then(res => res.json())
@@ -25,6 +27,10 @@ export default function InvoiceHistory() {
 
   useEffect(() => {
     loadInvoices();
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => setConfig(data))
+      .catch(console.error);
   }, []);
 
   const filteredInvoices = useMemo(() => {
@@ -59,6 +65,18 @@ export default function InvoiceHistory() {
       return true;
     });
   }, [allInvoices, dateFrom, dateTo, searchTerm]);
+
+  const draftInvoices = useMemo(() => {
+    return filteredInvoices.filter(inv => inv.status === 'pending');
+  }, [filteredInvoices]);
+
+  const emittedInvoices = useMemo(() => {
+    return filteredInvoices.filter(inv => {
+      if (inv.status !== 'emitted') return false;
+      if (!config || !config.afipPtoVta) return true;
+      return Number(inv.ptoVta) === Number(config.afipPtoVta);
+    });
+  }, [filteredInvoices, config]);
 
   const dateError = dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo);
 
@@ -206,7 +224,7 @@ export default function InvoiceHistory() {
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-3">
              <ShieldCheck size={18} className="text-primary/70" />
-             <h2 className="text-primary font-black text-sm tracking-[0.3em] uppercase italic">HISTORIAL DE COMPROBANTES EMITIDOS</h2>
+             <h2 className="text-primary font-black text-sm tracking-[0.3em] uppercase italic">Historial de borradores sin emitir</h2>
           </div>
           <div className="flex gap-4 items-center">
             {isProcessingBatch ? (
@@ -226,68 +244,53 @@ export default function InvoiceHistory() {
           </div>
         </div>
 
-        {filteredInvoices.length === 0 ? (
+        {draftInvoices.length === 0 ? (
           <div className="text-center py-12 border border-dashed border-primary/20 rounded-sm">
-            <span className="text-xs text-gray-500 font-mono uppercase tracking-widest">NO SE REGISTRARON COMPROBANTES EMITIDOS</span>
+            <span className="text-xs text-gray-500 font-mono uppercase tracking-widest">NO SE REGISTRARON BORRADORES SIN EMITIR</span>
           </div>
         ) : (
-          filteredInvoices.map((inv) => (
-            <div key={inv.id} className={`border ${inv.status === 'pending' ? 'border-yellow-900/40 bg-yellow-950/5 hover:bg-yellow-950/10' : 'border-green-900/40 bg-green-950/5 hover:bg-green-950/10'} p-4 flex items-center group transition-all mb-2`}>
-              <div className={`w-1.5 h-16 mr-6 ${inv.status === 'pending' ? 'bg-yellow-600 shadow-[0_0_15px_rgba(202,138,4,0.5)]' : 'bg-green-600 shadow-[0_0_15px_rgba(22,163,74,0.5)]'}`}></div>
+          draftInvoices.map((inv) => (
+            <div key={inv.id} className="border border-yellow-900/40 bg-yellow-950/5 hover:bg-yellow-950/10 p-4 flex items-center group transition-all mb-2">
+              <div className="w-1.5 h-16 mr-6 bg-yellow-600 shadow-[0_0_15px_rgba(202,138,4,0.5)]"></div>
               
-              {inv.status === 'pending' ? (
-                <div className="mr-6 flex items-center justify-center">
-                  <input 
-                    type="checkbox" 
-                    className="w-6 h-6 accent-yellow-500 cursor-pointer"
-                    checked={selectedDrafts.includes(inv.id)}
-                    onChange={() => toggleSelectDraft(inv.id)}
-                  />
-                </div>
-              ) : (
-                <div className="w-12 h-12 bg-green-600/20 rounded-sm flex items-center justify-center mr-6">
-                  <Check className="text-green-500" size={24} />
-                </div>
-              )}
+              <div className="mr-6 flex items-center justify-center">
+                <input 
+                  type="checkbox" 
+                  className="w-6 h-6 accent-yellow-500 cursor-pointer"
+                  checked={selectedDrafts.includes(inv.id)}
+                  onChange={() => toggleSelectDraft(inv.id)}
+                />
+              </div>
 
               <div className="flex-1">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-black text-sm tracking-widest uppercase text-white group-hover:text-green-400 transition-colors">{inv.clientName || 'CONSUMIDOR FINAL'}</h4>
+                    <h4 className="font-black text-sm tracking-widest uppercase text-white group-hover:text-yellow-400 transition-colors">{inv.clientName || 'CONSUMIDOR FINAL'}</h4>
                     <div className="flex items-center gap-4 mt-2">
                       <span className="text-[10px] text-gray-500 uppercase font-mono">{inv.date} • COMPROBANTE: #{inv.id?.slice(-4) || 'BORRADOR'}</span>
                     </div>
                   </div>
                   <div className="text-right">
-                     <div className="text-xl font-black text-green-500 tracking-tighter">$ {(inv.amount || 0).toLocaleString('es-AR')}</div>
-                     <div className="text-[10px] text-gray-500 font-mono mt-1 uppercase">{inv.status === 'pending' ? 'Borrador' : 'Emitido'}</div>
+                     <div className="text-xl font-black text-yellow-500 tracking-tighter">$ {(inv.amount || 0).toLocaleString('es-AR')}</div>
+                     <div className="text-[10px] text-gray-500 font-mono mt-1 uppercase">Borrador</div>
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-2 ml-8">
-                {inv.status === 'emitted' ? (
-                  <button 
-                    onClick={() => viewPDF(inv)}
-                    className="os-button border-green-600/40 text-green-400 hover:text-green-300 !px-4 hover:bg-green-600/20"
-                  >
-                    <FileText size={14} className="inline mr-2" />
-                    VER PDF A4
-                  </button>
-                ) : (
-                  <div className="px-4 py-2 text-[10px] text-yellow-500 font-bold border border-yellow-500/20 bg-yellow-500/5 rounded-sm">
-                    PENDIENTE
-                  </div>
-                )}
-                
                 <button 
-                  onClick={() => checkConstancia(inv.clientCuit)}
-                  className="os-button border-gray-600/40 text-gray-400 hover:text-white !px-4"
+                  onClick={() => viewPDF(inv)}
+                  className="os-button border-yellow-600/40 text-yellow-500 hover:text-yellow-400 !px-4 hover:bg-yellow-600/20 flex items-center gap-2"
                 >
-                  VER DETALLE
+                  <FileText size={14} />
+                  VISTA PREVIA BORRADOR
                 </button>
-                <button className="p-2 border border-red-900/40 hover:bg-red-900/20 text-red-500/50 hover:text-red-500 transition-colors">
-                  <Trash2 size={16} />
+                <button 
+                  onClick={() => handleDelete(inv.id)}
+                  className="os-button border-red-600/40 text-red-500 hover:text-red-400 !px-4 hover:bg-red-600/20 flex items-center gap-2"
+                >
+                  <Trash2 size={14} />
+                  ELIMINAR BORRADOR
                 </button>
               </div>
             </div>
@@ -299,53 +302,49 @@ export default function InvoiceHistory() {
       <div className="os-card !p-8">
         <h2 className="text-primary font-black text-sm tracking-[0.3em] uppercase italic mb-8">HISTORIAL DE COMPROBANTES</h2>
         
-        {filteredInvoices.length === 0 ? (
+        {emittedInvoices.length === 0 ? (
           <div className="text-center py-12 border border-dashed border-primary/20 rounded-sm">
-            <span className="text-xs text-gray-500 font-mono uppercase tracking-widest">HISTORIAL DE COMPROBANTES VACÍO</span>
+            <span className="text-xs text-gray-500 font-mono uppercase tracking-widest">HISTORIAL DE COMPROBANTES VACÍO (SIN EMITIR EN AFIP)</span>
           </div>
         ) : (
-          filteredInvoices.map((inv) => (
+          emittedInvoices.map((inv) => (
             <div key={`det-${inv.id}`} className="bg-primary/5 border border-primary/20 p-6 flex items-center group mb-4 last:mb-0">
               <div className="flex-1">
                 <div className="flex items-baseline gap-6">
-                   <h4 className="font-black text-lg tracking-widest uppercase text-green-500">{inv.type || 'C'} #{inv.id?.slice(-4)}</h4>
+                   <h4 className="font-black text-lg tracking-widest uppercase text-green-500">
+                     {inv.type || 'C'} #{inv.voucherNumber ? String(inv.voucherNumber).padStart(8, '0') : inv.id?.slice(-4)}
+                   </h4>
                    <div className="text-2xl font-black text-white tracking-tighter">$ {(inv.amount || 0).toLocaleString('es-AR')}</div>
                 </div>
                 <div className="text-[10px] text-gray-600 uppercase font-mono tracking-widest mt-2">
-                   FECHA: {inv.date} | ESTADO: {inv.status === 'pending' ? 'BORRADOR' : 'EMITIDO'}
+                   FECHA: {inv.date} | ESTADO: EMITIDO
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <button 
-                  onClick={() => handleDelete(inv.id)}
-                  className="p-2 border border-red-900/40 hover:bg-red-900/20 text-red-500/50 hover:text-red-500 transition-colors mr-2"
-                >
-                  <Trash2 size={16} />
-                </button>
-                <button 
-                  onClick={() => checkConstancia(inv.clientCuit)}
-                  className="os-button border-gray-600/40 text-gray-400 hover:text-white flex items-center gap-2"
-                >
-                   DETALLES <ExternalLink size={12} />
-                </button>
-                <button 
-                  onClick={() => viewPDF(inv)}
+                  onClick={() => {
+                    if (!inv.cae) {
+                      alert("Esta factura no posee CAE válido en AFIP.");
+                    } else {
+                      viewPDF(inv);
+                    }
+                  }}
                   className="os-button border-amber-600/40 text-amber-500/70 hover:text-amber-500 flex items-center gap-2"
                 >
-                   REGENERAR PDF <RefreshCw size={12} />
+                   VISTA FACTURA GENERADA <FileText size={12} />
                 </button>
                 <button 
                   onClick={() => handleAnnul(inv)}
                   className="os-button border-red-600/40 text-red-500/70 hover:text-red-500 flex items-center gap-2"
                 >
-                   ANULAR <AlertTriangle size={12} />
+                   EMITIR NC <AlertTriangle size={12} />
                 </button>
                 <button 
                   onClick={() => verifyInArca(inv)}
                   className="os-button border-gray-600/40 text-gray-500 hover:text-white flex items-center gap-2"
                 >
-                   VERIFICAR EN ARCA
+                   VERIFICAR EL CAE EN ARCA
                 </button>
               </div>
             </div>
