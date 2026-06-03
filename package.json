@@ -1,7 +1,7 @@
 {
   "name": "factureando",
   "private": true,
-  "version": "1.0.24",
+  "version": "1.0.25",
   "description": "Sistema de Facturación Automática para Monotributistas",
   "main": "electron-main.cjs",
   "author": "AstudillaJS",
@@ -60,7 +60,7 @@
     ]
   },
   "dependencies": {
-    "@afipsdk/afip.js": "^0.8.1",
+    "@afipsdk/afip.js": "^1.2.3",
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",

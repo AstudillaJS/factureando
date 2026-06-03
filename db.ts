@@ -21,7 +21,8 @@ const defaultData = {
     afipCrtPath: '',
     afipKeyPath: '',
     afipCuit: '',
-    afipProduction: true
+    afipProduction: true,
+    afipToken: ''
   },
   invoices: [],
   clients: []

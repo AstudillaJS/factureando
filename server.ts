@@ -146,13 +146,27 @@ export async function startServer() {
     
     try {
       const cuitNum = parseInt(config.afipCuit.replace(/\D/g, ''));
-      const afip = new Afip({
+      let certContent = "";
+      let keyContent = "";
+      if (config.afipCrtPath && fs.existsSync(config.afipCrtPath)) {
+        certContent = fs.readFileSync(config.afipCrtPath, 'utf8');
+      }
+      if (config.afipKeyPath && fs.existsSync(config.afipKeyPath)) {
+        keyContent = fs.readFileSync(config.afipKeyPath, 'utf8');
+      }
+
+      const afipOptions: any = {
         CUIT: cuitNum,
-        cert: config.afipCrtPath,
-        key: config.afipKeyPath,
-        res_folder: path.join(DATA_DIR, 'certs') + path.sep,
+        cert: certContent,
+        key: keyContent,
         production: config.afipProduction === true
-      });
+      };
+
+      if (config.afipToken) {
+        afipOptions.access_token = config.afipToken;
+      }
+
+      const afip = new Afip(afipOptions);
       
       const status = await afip.ElectronicBilling.getServerStatus();
       
@@ -226,13 +240,27 @@ export async function startServer() {
       if (invoice.status === 'emitted') return res.status(400).json({ success: false, message: "Factura ya emitida." });
 
       const cuitNum = parseInt(config.afipCuit.replace(/\D/g, ''));
-      const afip = new Afip({
+      let certContent = "";
+      let keyContent = "";
+      if (config.afipCrtPath && fs.existsSync(config.afipCrtPath)) {
+        certContent = fs.readFileSync(config.afipCrtPath, 'utf8');
+      }
+      if (config.afipKeyPath && fs.existsSync(config.afipKeyPath)) {
+        keyContent = fs.readFileSync(config.afipKeyPath, 'utf8');
+      }
+
+      const afipOptions: any = {
         CUIT: cuitNum,
-        cert: config.afipCrtPath,
-        key: config.afipKeyPath,
-        res_folder: path.join(DATA_DIR, 'certs') + path.sep,
+        cert: certContent,
+        key: keyContent,
         production: config.afipProduction === true
-      });
+      };
+
+      if (config.afipToken) {
+        afipOptions.access_token = config.afipToken;
+      }
+
+      const afip = new Afip(afipOptions);
 
       const ptovta = parseInt(config.afipPtoVta || "1");
       const lastVoucher = await afip.ElectronicBilling.getLastVoucher(ptovta, 11); // 11 = Factura C
