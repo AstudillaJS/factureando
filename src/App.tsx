@@ -15,6 +15,8 @@ import ClientManagement from "./components/ClientManagement";
 import SystemCore from "./components/SystemCore";
 import ErrorLog from "./components/ErrorLog";
 import ThemeSelector from "./components/ThemeSelector";
+import BarberConfig from "./components/BarberConfig";
+import InvoiceDesignSettings from "./components/InvoiceDesignSettings";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 
 type Tabs = "dashboard" | "billing" | "config";
@@ -141,8 +143,10 @@ function TabRouter({ activeTab }: { activeTab: Tabs }) {
 
           <OSIntegration />
           <ThemeSelector />
+          <BarberConfig />
           <SecurityFiles />
           <FiscalCluster />
+          <InvoiceDesignSettings />
           <ClientManagement />
           <SystemCore />
           <ErrorLog />

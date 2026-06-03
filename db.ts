@@ -1,7 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const isElectron = typeof process !== 'undefined' && process.versions && process.versions.electron;
+
+export const DATA_DIR = isElectron
+  ? path.join(process.env.APPDATA || process.env.USERPROFILE || '.', 'Factureando')
+  : path.join(process.cwd(), 'data');
+
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 // Ensure data directory exists
@@ -15,7 +20,8 @@ const defaultData = {
     mpToken: '',
     afipCrtPath: '',
     afipKeyPath: '',
-    afipCuit: ''
+    afipCuit: '',
+    afipProduction: false
   },
   invoices: [],
   clients: []

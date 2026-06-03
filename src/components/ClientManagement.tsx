@@ -4,9 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 export default function ClientManagement() {
   const [showModal, setShowModal] = useState(false);
-  const [clients, setClients] = useState([
-    { id: 1, name: 'INSTITUTO DE TRAUMATOLOGIA Y ENFERMEDADES OSEAS S R L', cuit: '30588898179', rate: 18000, active: true }
-  ]);
+  const [clients, setClients] = useState<any[]>([]);
 
   const [newClient, setNewClient] = useState({ name: '', cuit: '', rate: '' });
   const [errors, setErrors] = useState<{name?: string, cuit?: string, rate?: string}>({});
@@ -58,31 +56,37 @@ export default function ClientManagement() {
       </div>
 
       <div className="space-y-4">
-        {clients.map(client => (
-          <div key={client.id} className="border border-border-amber/50 p-4 flex justify-between items-center group">
-            <div className="flex items-center gap-4">
-              <div className="w-1.5 h-10 bg-primary shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm tracking-widest uppercase">{client.name}</span>
-                  <span className="text-[8px] text-primary/50 uppercase tracking-widest font-bold">[{client.active ? 'ACTIVO' : 'INACTIVO'}]</span>
-                </div>
-                <div className="text-[10px] text-gray-500 font-mono tracking-tighter uppercase mt-1">
-                  CUIT: {client.cuit} | TARIFA: ${client.rate}/hs
+        {clients.length === 0 ? (
+          <div className="text-center py-12 border border-dashed border-primary/20 rounded-sm">
+            <span className="text-xs text-gray-500 font-mono uppercase tracking-widest">NO HAY CLIENTES REGISTRADOS</span>
+          </div>
+        ) : (
+          clients.map(client => (
+            <div key={client.id} className="border border-border-amber/50 p-4 flex justify-between items-center group">
+              <div className="flex items-center gap-4">
+                <div className="w-1.5 h-10 bg-primary shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm tracking-widest uppercase">{client.name}</span>
+                    <span className="text-[8px] text-primary/50 uppercase tracking-widest font-bold">[{client.active ? 'ACTIVO' : 'INACTIVO'}]</span>
+                  </div>
+                  <div className="text-[10px] text-gray-500 font-mono tracking-tighter uppercase mt-1">
+                    CUIT: {client.cuit} | TARIFA: ${client.rate}/hs
+                  </div>
                 </div>
               </div>
+              <div className="flex gap-2">
+                <button className="text-[10px] border border-primary/30 px-3 py-1 uppercase tracking-widest hover:bg-white/5 transition-colors text-primary/70">USAR ESTE</button>
+                <button className="p-2 border border-primary/30 hover:bg-primary/10 transition-colors text-gray-400 group-hover:text-primary">
+                  <Edit2 size={14} />
+                </button>
+                <button className="p-2 border border-red-900/40 hover:bg-red-900/20 transition-colors text-red-500/50 hover:text-red-500">
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button className="text-[10px] border border-primary/30 px-3 py-1 uppercase tracking-widest hover:bg-white/5 transition-colors text-primary/70">USAR ESTE</button>
-              <button className="p-2 border border-primary/30 hover:bg-primary/10 transition-colors text-gray-400 group-hover:text-primary">
-                <Edit2 size={14} />
-              </button>
-              <button className="p-2 border border-red-900/40 hover:bg-red-900/20 transition-colors text-red-500/50 hover:text-red-500">
-                <Trash2 size={14} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       <AnimatePresence>

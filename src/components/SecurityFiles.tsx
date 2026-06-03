@@ -1,6 +1,41 @@
 import { Search } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function SecurityFiles() {
+  const [config, setConfig] = useState<any>({});
+  
+  useEffect(() => {
+    fetch("/api/config").then(res => res.json()).then(setConfig).catch(console.error);
+  }, []);
+
+  const handleChangeFolder = async () => {
+    try {
+      const { ipcRenderer } = window.require('electron');
+      const folder = await ipcRenderer.invoke('select-pdf-folder');
+      if (folder) {
+        setConfig(prev => ({ ...prev, pdfFolder: folder }));
+        fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pdfFolder: folder })
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error al abrir el selector de carpetas. Esta función requiere estar en la app de escritorio.");
+    }
+  };
+
+  const handleOpenBackups = () => {
+    try {
+      const { ipcRenderer } = window.require('electron');
+      ipcRenderer.send('open-backup-folder');
+    } catch (e) {
+      console.error(e);
+      alert("Esta función requiere estar en la app de escritorio.");
+    }
+  };
+
   return (
     <div className="os-card">
       <h2 className="os-section-title">3. SEGURIDAD Y ARCHIVOS</h2>
@@ -12,10 +47,10 @@ export default function SecurityFiles() {
             <input 
               type="text" 
               className="os-input font-mono text-xs" 
-              defaultValue="C:\Users\astud\OneDrive" 
+              value={config.pdfFolder || "C:\\Users\\astud\\OneDrive"} 
               readOnly
             />
-            <button className="os-button whitespace-nowrap">CAMBIAR</button>
+            <button onClick={handleChangeFolder} className="os-button whitespace-nowrap">CAMBIAR</button>
           </div>
         </div>
 
@@ -34,13 +69,13 @@ export default function SecurityFiles() {
               <span className="font-bold tracking-widest text-xs uppercase underline underline-offset-4 decoration-primary/30">SISTEMA DE PROTECCIÓN DE DATOS</span>
             </div>
             <p className="text-[10px] text-gray-600 font-mono tracking-tighter">
-              UBICACIÓN: C:\Users\astud\AppData\Roaming\tracker-de-horas\session_data.json
+              UBICACIÓN: C:\Users\astud\AppData\Roaming\Factureando\session_data.json
             </p>
             <p className="text-[10px] text-primary/50 italic">
               * Se crea una copia de seguridad automática cada vez que se guardan cambios. El sistema conserva los últimos 10 estados para recuperación ante fallos.
             </p>
           </div>
-          <button className="text-[10px] border border-primary/30 px-3 py-1 uppercase tracking-widest hover:bg-primary hover:text-black transition-colors">
+          <button onClick={handleOpenBackups} className="text-[10px] border border-primary/30 px-3 py-1 uppercase tracking-widest hover:bg-primary hover:text-black transition-colors">
             ABRIR CARPETA DE BACKUPS
           </button>
         </div>
