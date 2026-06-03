@@ -21,7 +21,7 @@ const defaultData = {
     afipCrtPath: '',
     afipKeyPath: '',
     afipCuit: '',
-    afipProduction: false
+    afipProduction: true
   },
   invoices: [],
   clients: []
@@ -35,7 +35,11 @@ if (!fs.existsSync(DB_FILE)) {
 export function readDb() {
   try {
     const data = fs.readFileSync(DB_FILE, 'utf-8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    if (parsed.config && parsed.config.afipProduction === undefined) {
+      parsed.config.afipProduction = true;
+    }
+    return parsed;
   } catch (error) {
     console.error('Error reading DB:', error);
     return defaultData;

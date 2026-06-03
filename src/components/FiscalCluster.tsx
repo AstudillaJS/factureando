@@ -245,7 +245,23 @@ export default function FiscalCluster() {
             <span className="text-[10px] text-primary uppercase tracking-widest font-bold">MODO PRODUCCIÓN</span>
             <div 
               className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${config.afipProduction ? 'bg-primary' : 'bg-gray-600'}`}
-              onClick={() => updateField('afipProduction', !config.afipProduction)}
+              onClick={async () => {
+                const newVal = !config.afipProduction;
+                updateField('afipProduction', newVal);
+                try {
+                  const res = await fetch("/api/config", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ...config, afipProduction: newVal })
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    fetchConfig();
+                  }
+                } catch (e) {
+                  console.error("Error auto-saving afipProduction toggle", e);
+                }
+              }}
             >
               <div className={`absolute w-3 h-3 bg-white rounded-full transition-all ${config.afipProduction ? 'right-1' : 'left-1'}`}></div>
             </div>
