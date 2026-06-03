@@ -60,12 +60,29 @@ export function writeDb(data: any) {
 export function updateConfig(newConfig: any) {
   const db = readDb();
   db.config = { ...db.config, ...newConfig };
+  
+  // Sincronizar puntoVenta y afipPtoVta
+  if (db.config.puntoVenta !== undefined) {
+    db.config.afipPtoVta = db.config.puntoVenta;
+  } else if (db.config.afipPtoVta !== undefined) {
+    db.config.puntoVenta = db.config.afipPtoVta;
+  }
+  
   writeDb(db);
   return db.config;
 }
 
 export function getConfig() {
-  return readDb().config;
+  const config = readDb().config;
+  
+  // Sincronizar puntoVenta y afipPtoVta
+  if (config.puntoVenta && !config.afipPtoVta) {
+    config.afipPtoVta = config.puntoVenta;
+  } else if (config.afipPtoVta && !config.puntoVenta) {
+    config.puntoVenta = config.afipPtoVta;
+  }
+  
+  return config;
 }
 
 export function addInvoice(invoice: any) {

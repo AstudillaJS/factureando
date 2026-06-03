@@ -262,7 +262,7 @@ export async function startServer() {
 
       const afip = new Afip(afipOptions);
 
-      const ptovta = parseInt(config.afipPtoVta || "1");
+      const ptovta = parseInt(config.puntoVenta || config.afipPtoVta || "1");
       const lastVoucher = await afip.ElectronicBilling.getLastVoucher(ptovta, 11); // 11 = Factura C
       const cbteNro = lastVoucher + 1;
 
