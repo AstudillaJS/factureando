@@ -1,7 +1,35 @@
 import { useTheme } from "../context/ThemeContext";
+import { useState, useEffect } from "react";
 
 export default function OSIntegration() {
   const { displayMode, setDisplayMode } = useTheme();
+  const [opacity, setOpacity] = useState(95);
+
+  useEffect(() => {
+    fetch("/api/config").then(res => res.json()).then(data => {
+      if (data.opacity) {
+        setOpacity(data.opacity);
+        handleOpacityChange(data.opacity, false);
+      }
+    }).catch(console.error);
+  }, []);
+
+  const handleOpacityChange = (val: number, save = true) => {
+    setOpacity(val);
+    try {
+      const { ipcRenderer } = window.require('electron');
+      ipcRenderer.send('set-opacity', val / 100);
+      if (save) {
+        fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ opacity: val })
+        });
+      }
+    } catch (e) {
+      console.log('No electron environment for opacity');
+    }
+  };
 
   return (
     <div className="os-card">
@@ -53,11 +81,16 @@ export default function OSIntegration() {
 
         <div className="border border-border-amber/50 p-4">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[10px] text-primary/70 uppercase tracking-widest">TRANSPARENCIA "FANTASMA" DEL WIDGET (95%)</span>
+            <span className="text-[10px] text-primary/70 uppercase tracking-widest">TRANSPARENCIA "FANTASMA" DE LA VENTANA ({opacity}%)</span>
           </div>
-          <div className="relative h-1 bg-gray-800 rounded-full">
-            <div className="absolute left-0 top-0 h-full bg-primary" style={{ width: '95%' }}></div>
-            <div className="absolute left-[95%] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+          <div className="relative">
+            <input 
+              type="range" 
+              min="20" max="100" 
+              value={opacity}
+              onChange={(e) => handleOpacityChange(Number(e.target.value))}
+              className="w-full h-1 bg-gray-800 rounded-full appearance-none outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(245,158,11,0.5)] cursor-pointer"
+            />
           </div>
           <div className="flex justify-between mt-2 text-[8px] uppercase tracking-widest text-gray-600">
             <span>INVISIBLE</span>

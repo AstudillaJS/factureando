@@ -1,7 +1,9 @@
 export default function MonotributoProjection() {
-  const annualTotal = 2188905190.00;
+  const annualTotal = 0;
   const nextCatStart = 6450001.00;
-  const projection = 4727517126.33;
+  const projection = 0;
+  const daysOfActivity = 0;
+  const balance = nextCatStart - annualTotal;
 
   return (
     <div className="os-card !p-8 relative overflow-hidden">
@@ -14,7 +16,7 @@ export default function MonotributoProjection() {
       </div>
 
       <div className="w-full h-1.5 bg-gray-900 rounded-full mb-10 overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
-        <div className="h-full bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]" style={{ width: '100%' }}></div>
+        <div className="h-full bg-primary shadow-[0_0_15px_rgba(245,158,11,0.5)]" style={{ width: '0%' }}></div>
       </div>
 
       <div className="flex justify-between items-center mb-12">
@@ -35,26 +37,28 @@ export default function MonotributoProjection() {
              <span className="text-[10px] text-amber-500 font-black uppercase tracking-widest">PROYECCIÓN ANUALIZADA (ARCA)</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-3xl font-black text-white tracking-tighter">$ 4.727.517.126,33</span>
-            <span className="text-[9px] text-gray-600 uppercase font-mono mt-2">Basado en 169 días de actividad.</span>
+            <span className="text-3xl font-black text-white tracking-tighter">$ {projection.toLocaleString('es-AR')}</span>
+            <span className="text-[9px] text-gray-600 uppercase font-mono mt-2">Basado en {daysOfActivity} días de actividad.</span>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex justify-between items-end">
              <span className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">SALDO PARA MANTENER CATEGORÍA A:</span>
-             <span className="text-xs font-mono text-red-600">$ -4.721.067.126,33</span>
+             <span className={`text-xs font-mono ${balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>$ {balance.toLocaleString('es-AR')}</span>
           </div>
           
-          <div className="bg-red-950/30 border border-red-900/50 p-4 flex items-center gap-4">
-             <div className="w-4 h-4 bg-red-600 flex items-center justify-center shrink-0">
-               <span className="text-[10px] font-black text-black">!</span>
-             </div>
-             <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] text-red-500 font-black uppercase tracking-widest">ALERTA: HAS EXCEDIDO EL LÍMITE DE TU CATEGORÍA (A). DEBERÍAS ESTAR EN:</span>
-                <span className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 uppercase tracking-widest">RÉGIMEN GENERAL / EXCEDIDO</span>
-             </div>
-          </div>
+          {annualTotal > nextCatStart && (
+            <div className="bg-red-950/30 border border-red-900/50 p-4 flex items-center gap-4">
+               <div className="w-4 h-4 bg-red-600 flex items-center justify-center shrink-0">
+                 <span className="text-[10px] font-black text-black">!</span>
+               </div>
+               <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] text-red-500 font-black uppercase tracking-widest">ALERTA: HAS EXCEDIDO EL LÍMITE DE TU CATEGORÍA (A). DEBERÍAS ESTAR EN:</span>
+                  <span className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 uppercase tracking-widest">RÉGIMEN GENERAL / EXCEDIDO</span>
+               </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Zap, FileSpreadsheet, Keyboard, Radio, Link2 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function Billing() {
   const [method, setMethod] = useState<'mp' | 'excel' | 'manual' | null>(null);
@@ -10,6 +10,17 @@ export default function Billing() {
   const [mpToken, setMpToken] = useState("");
   const [mpStatus, setMpStatus] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const [testingMP, setTestingMP] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/config")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.mpToken) {
+          setMpToken(data.mpToken);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const testMPConnection = async () => {
     if (!mpToken) {
@@ -45,11 +56,40 @@ export default function Billing() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleGenerateDraft = () => {
+  const [draftStatus, setDraftStatus] = useState<{msg: string, type: 'success'|'error'} | null>(null);
+
+  const handleGenerateDraft = async () => {
     if (validateManual()) {
-      alert(`Borrador generado: ${manualForm.concept} por $${manualForm.amount}`);
-      setManualForm({ concept: '', amount: '' });
-      setManualErrors({});
+      try {
+        const payload = {
+          amount: Number(manualForm.amount),
+          date: new Date().toISOString().split('T')[0],
+          type: 'C',
+          clientCuit: manualForm.cuit || '0',
+          clientName: manualForm.client || 'CONSUMIDOR FINAL',
+          description: manualForm.concept,
+          method: 'manual',
+          status: 'pending'
+        };
+
+        const res = await fetch("/api/invoices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          setDraftStatus({ msg: "BORRADOR GUARDADO CON ÉXITO", type: 'success' });
+          setManualForm({ concept: '', amount: '', client: '', cuit: '' });
+          setManualErrors({});
+          setTimeout(() => setDraftStatus(null), 3000);
+        } else {
+          setDraftStatus({ msg: "ERROR AL GUARDAR BORRADOR", type: 'error' });
+        }
+      } catch (e) {
+        setDraftStatus({ msg: "ERROR AL CONECTAR CON EL SERVIDOR", type: 'error' });
+      }
     }
   };
 
@@ -145,7 +185,7 @@ export default function Billing() {
                     <div className="border-2 border-dashed border-green-900/40 p-8 rounded flex flex-col items-center justify-center gap-4 bg-green-500/5 cursor-pointer hover:bg-green-500/10 transition-colors">
                       <FileSpreadsheet className="text-green-500" size={32} />
                       <span className="text-[10px] font-bold text-green-500">ARRASTRE SU ARCHIVO .XLSX / .CSV AQUÍ</span>
-                      <a href="/public/template_facturacion.csv" download className="text-[10px] font-bold text-green-500 hover:underline underline-offset-4 mt-4 bg-green-500/20 px-4 py-2 rounded uppercase tracking-widest">
+                      <a href="/template_facturacion.csv" download className="text-[10px] font-bold text-green-500 hover:underline underline-offset-4 mt-4 bg-green-500/20 px-4 py-2 rounded uppercase tracking-widest">
                         DESCARGAR PLANTILLA DE FACTURACIÓN
                       </a>
                     </div>
@@ -173,6 +213,15 @@ export default function Billing() {
                       />
                       {manualErrors.amount && <span className="text-[9px] text-red-500 font-bold uppercase mt-1 block px-2">{manualErrors.amount}</span>}
                     </div>
+                    {draftStatus && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className={`p-3 border ${draftStatus.type === 'success' ? 'border-green-500/50 bg-green-500/10 text-green-500' : 'border-red-500/50 bg-red-500/10 text-red-500'} text-[10px] font-bold uppercase tracking-widest mb-4`}
+                      >
+                        {draftStatus.msg}
+                      </motion.div>
+                    )}
                     <button onClick={handleGenerateDraft} className="os-button w-full py-4">GENERAR BORRADOR</button>
                   </div>
                 )}
