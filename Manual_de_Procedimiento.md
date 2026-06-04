@@ -37,11 +37,27 @@ Cuando se finaliza una jornada de trabajo en la terminal, los registros se guard
 
 ## 3. Personalización y Generación de PDF (A4)
 
-El sistema incluye un generador de PDFs integrado ([pdfGenerator.ts](file:///c:/Users/astud/OneDrive/LYNX/Factureando/src/utils/pdfGenerator.ts)) diseñado para emitir las facturas bajo la normativa oficial, incluyendo los detalles de la empresa, el logotipo personalizado y la marca de la consultora.
+El sistema incluye un módulo de diseño avanzado y un generador de PDFs integrado ([pdfGenerator.ts](file:///c:/Users/astud/OneDrive/LYNX/Factureando/src/utils/pdfGenerator.ts)) diseñado para emitir facturas bajo la normativa oficial de ARCA/AFIP, permitiendo configurar visualmente los detalles estéticos del comprobante.
 
-1.  **Carga de Logotipo:** En el módulo "Diseño de Factura", el usuario puede subir un logotipo en formato PNG o JPG. Este se almacena en base64 dentro de la configuración de `db.json` (`invoiceLogo`).
-2.  **Pie de página Institucional:** Todas las facturas PDF generadas incorporan de forma obligatoria en la sección inferior la leyenda **"Powered by Lynx Consulting"** y el logotipo institucional de la consultora.
-3.  **Visualización:** Al hacer clic en "Ver PDF" o "Regenerar PDF", el sistema construye el documento dinámicamente y lo abre en el navegador predeterminado del sistema operativo.
+### Estructura de la Cabecera
+*   **Columna Izquierda (Diseño & Fantasía):** Dedicada a mostrar el logotipo del negocio y el **Nombre de Fantasía (Comercial)** en tipografía grande y negrita. El bloque secundario (dirección y condición IVA) puede configurarse como centrado o alineado a la izquierda.
+*   **Columna Derecha (Datos Fiscales tipo AFIP):** Muestra los datos de emisor estructurados con etiquetas en **negrita** y valores en **normal** (Punto de Venta, Nro de Comprobante, Fecha de Emisión, Fecha de Vencimiento, CUIT, Ing. Brutos C.M, Inicio de Actividades y Razón Social oficial).
+*   **Caja "C" Central:** Tipo de comprobante ("C" y código "011") con un diseño de relleno sólido que hace juego con la paleta de colores.
+
+### Parámetros de Personalización Visual (Pestañas de Configuración)
+1.  **Diseño & Datos:**
+    *   **Paleta de Colores:** Elección entre 5 esquemas visuales (*Pizarra Clásica, Azul Profesional, Verde Esmeralda, Ámbar Premium, Monocromo*) que cambian de forma integrada el color de fondo de las cabeceras de las tablas de ítems, bordes principales y cajas del PDF.
+    *   **Edición de Datos de Emisor:** Formularios dedicados para establecer el Nombre Comercial (Fantasía), Inicio de Actividades e Ingresos Brutos.
+2.  **Logos:**
+    *   **Logo del Comercio:** Carga de logotipo en formato PNG o JPG. Cuenta con selectores de posición (Izquierda / Derecha) y sliders de control milimétrico del ancho, además de **ajuste de posición X (Horizontal) e Y (Vertical)** para situar el logo en cualquier parte de la cabecera.
+    *   **Logo de LYNX (Branding):** Ubicaciones seleccionables (*Abajo a la Derecha, Abajo a la Izquierda, Abajo al Centro* y como *Marca de Agua semitransparente* en el centro de la hoja) con sliders de tamaño y opacidad para la marca de agua.
+3.  **Alineación & Márgenes (Anti-superposición):**
+    *   Sliders dedicados para configurar la altura de la cabecera y el inicio vertical de la tabla de ítems.
+    *   Controles independientes de coordenadas verticales (Y) y tamaño de fuente tanto para la columna izquierda (Fantasía) como la derecha (Factura), permitiendo separar los bloques y evitar cualquier superposición.
+    *   Deslizadores X independientes por columna para arrastrar lateralmente los textos.
+
+### Visualizador PDF Interactivo en Tiempo Real
+El panel de control incluye un contenedor con un `iframe` que renderiza un comprobante mock y actualiza en tiempo real (con un retraso de 200ms de debounce para evitar ralentizaciones) el diseño final del PDF conforme se mueven los deslizadores. Esto permite a los comercios ajustar sus márgenes visualmente antes de presionar el botón **"Guardar Diseño Final"**, el cual almacena la configuración de forma persistente en el `db.json` local.
 
 ---
 
