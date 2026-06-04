@@ -148,6 +148,7 @@ export default function InvoiceDesignSettings() {
   const saveSettings = async () => {
     setSaving(true);
     try {
+      console.log("Enviando configuración para guardar...", settings);
       const res = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -156,10 +157,13 @@ export default function InvoiceDesignSettings() {
       if (res.ok) {
         alert("Diseño de factura guardado exitosamente.");
       } else {
-        alert("Error al guardar el diseño.");
+        const errorText = await res.text();
+        console.error(`Error del servidor al guardar diseño (Status ${res.status}):`, errorText);
+        alert(`Error al guardar el diseño. Detalle: ${errorText || res.statusText || res.status}`);
       }
-    } catch (error) {
-      alert("Error de conexión al guardar el diseño.");
+    } catch (error: any) {
+      console.error("Error de conexión al guardar el diseño:", error);
+      alert(`Error de conexión al guardar el diseño. Detalle: ${error.message}`);
     }
     setSaving(false);
   };

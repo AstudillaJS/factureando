@@ -36,8 +36,15 @@ export async function startServer() {
   });
 
   app.post("/api/config", (req, res) => {
-    const newConfig = updateConfig(req.body);
-    res.json({ success: true, config: newConfig });
+    try {
+      const payloadString = JSON.stringify(req.body);
+      console.log(`[SERVER] POST /api/config. Tamaño del payload recibido: ${(payloadString.length / 1024).toFixed(2)} KB`);
+      const newConfig = updateConfig(req.body);
+      res.json({ success: true, config: newConfig });
+    } catch (error: any) {
+      console.error("[SERVER ERROR] Error en POST /api/config:", error);
+      res.status(500).send(`Error interno del servidor al actualizar config: ${error.message}`);
+    }
   });
 
   app.get("/api/invoices", (req, res) => {
