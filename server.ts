@@ -26,7 +26,8 @@ export async function startServer() {
   const app = express();
   const PORT = 3010;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
   // --- Endpoints de Base de Datos Local --- //
   

@@ -51,6 +51,7 @@ export const generateInvoicePDF = async (invoiceData: any, configData: any) => {
   // Nuevos datos fiscales editables
   const ingresosBrutos = configData.ingresosBrutos || cuit;
   const inicioActividad = configData.inicioActividad || "01/05/2026";
+  const domicilioComercial = configData.domicilioComercial || "";
 
   // --- Configuraciones Estéticas de ConfigData ---
   const colorPalette = configData.pdfColorPalette || "slate";
@@ -192,9 +193,12 @@ export const generateInvoicePDF = async (invoiceData: any, configData: any) => {
 
   // Pintar Nombre comercial/fantasía destacado
   drawLeftText(nombreFantasia.toUpperCase(), finalCompanyNameY, true, companyNameSize);
-  drawLeftText("Monotributo", finalCompanyNameY + 6, false, 9);
-  drawLeftText("SAN PEDRITO AV. 248 Piso:PB   Ciudad Autonoma Buenos Aires", finalCompanyNameY + 11, false, 7.5);
-  drawLeftText("Aires, CP: 1406 CIUDAD AUTONOMA BUENOS AIRES AR", finalCompanyNameY + 15, false, 7.5);
+  if (domicilioComercial) {
+    const lines = domicilioComercial.split('\n');
+    lines.forEach((line: string, index: number) => {
+      drawLeftText(line.trim(), finalCompanyNameY + 6 + (index * 4.5), false, 8);
+    });
+  }
 
   // --- Datos del Comprobante (Lado Derecho) ---
   doc.setFont("helvetica", "bold");
@@ -301,7 +305,7 @@ export const generateInvoicePDF = async (invoiceData: any, configData: any) => {
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   doc.text("Comprobante Autorizado por AFIP (ARCA)", 15, pageHeight - 14);
-  doc.text("Este PDF ha sido generado por LYNX_OS v2.7", 15, pageHeight - 10);
+  doc.text("Este PDF ha sido generado por Factureando un producto de LYNX Consulting", 15, pageHeight - 10);
   
   // --- Pintar Logo LYNX en Footer ---
   if (lynxLogoBase64 && lynxLogoPosition !== "oculto" && lynxLogoPosition !== "marca_agua") {
