@@ -68,7 +68,10 @@ export function updateConfig(newConfig: any) {
     db.config.puntoVenta = db.config.afipPtoVta;
   }
   
-  writeDb(db);
+  const success = writeDb(db);
+  if (!success) {
+    throw new Error(`No se pudo escribir físicamente en el archivo de base de datos db.json. Ruta: ${DB_FILE}`);
+  }
   return db.config;
 }
 
