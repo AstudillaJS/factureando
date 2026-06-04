@@ -39,6 +39,7 @@ export default function InvoiceDesignSettings() {
     pdfInvoiceTypeY: 10,
     pdfTableStartY: 98,
     // Nuevos campos
+    domicilioComercial: "",
     nombreFantasia: "",
     inicioActividad: "01/05/2026",
     ingresosBrutos: "",
@@ -74,6 +75,7 @@ export default function InvoiceDesignSettings() {
           pdfInvoiceTypeY: data.pdfInvoiceTypeY ? Number(data.pdfInvoiceTypeY) : 10,
           pdfTableStartY: data.pdfTableStartY ? Number(data.pdfTableStartY) : 98,
           // Nuevos campos cargados de la DB
+          domicilioComercial: data.domicilioComercial || "",
           nombreFantasia: data.nombreFantasia || "",
           inicioActividad: data.inicioActividad || "01/05/2026",
           ingresosBrutos: data.ingresosBrutos || "",
@@ -251,6 +253,17 @@ export default function InvoiceDesignSettings() {
                       placeholder="Ej: Loaiza Martha"
                       value={settings.nombreFantasia}
                       onChange={(e) => handleInputChange('nombreFantasia', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-primary/70 uppercase tracking-widest block font-bold mb-2">Dirección Comercial (Lado Izquierdo)</label>
+                    <textarea 
+                      rows={2}
+                      className="os-input text-xs resize-none" 
+                      placeholder="Ej: SAN PEDRITO AV. 248 Piso:PB&#10;Ciudad Autónoma de Buenos Aires"
+                      value={settings.domicilioComercial}
+                      onChange={(e) => handleInputChange('domicilioComercial', e.target.value)}
                     />
                   </div>
 
