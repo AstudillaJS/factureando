@@ -4,7 +4,13 @@ import React, { useState, useEffect } from "react";
 
 export default function Billing() {
   const [method, setMethod] = useState<'mp' | 'excel' | 'manual' | null>(null);
-  const [manualForm, setManualForm] = useState({ concept: '', amount: '' });
+  const [manualForm, setManualForm] = useState({ 
+    concept: '', 
+    amount: '', 
+    date: new Date().toISOString().split('T')[0],
+    client: '',
+    cuit: ''
+  });
   const [manualErrors, setManualErrors] = useState<{concept?: string, amount?: string}>({});
 
   const [mpToken, setMpToken] = useState("");
@@ -63,7 +69,7 @@ export default function Billing() {
       try {
         const payload = {
           amount: Number(manualForm.amount),
-          date: new Date().toISOString().split('T')[0],
+          date: manualForm.date || new Date().toISOString().split('T')[0],
           type: 'C',
           clientCuit: manualForm.cuit || '0',
           clientName: manualForm.client || 'CONSUMIDOR FINAL',
@@ -81,7 +87,13 @@ export default function Billing() {
         
         if (data.success) {
           setDraftStatus({ msg: "BORRADOR GUARDADO CON ÉXITO", type: 'success' });
-          setManualForm({ concept: '', amount: '', client: '', cuit: '' });
+          setManualForm({ 
+            concept: '', 
+            amount: '', 
+            client: '', 
+            cuit: '', 
+            date: new Date().toISOString().split('T')[0] 
+          });
           setManualErrors({});
           setTimeout(() => setDraftStatus(null), 3000);
         } else {
@@ -212,6 +224,15 @@ export default function Billing() {
                         onChange={e => setManualForm({...manualForm, amount: e.target.value})}
                       />
                       {manualErrors.amount && <span className="text-[9px] text-red-500 font-bold uppercase mt-1 block px-2">{manualErrors.amount}</span>}
+                    </div>
+                    <div>
+                      <label className="text-[8px] text-primary/60 uppercase font-mono block mb-1 px-1">Fecha de Emisión de Factura</label>
+                      <input 
+                        type="date" 
+                        className="os-input font-mono text-xs"
+                        value={manualForm.date}
+                        onChange={e => setManualForm({...manualForm, date: e.target.value})}
+                      />
                     </div>
                     {draftStatus && (
                       <motion.div 

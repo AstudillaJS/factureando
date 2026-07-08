@@ -274,7 +274,8 @@ export async function startServer() {
       const lastVoucher = await afip.ElectronicBilling.getLastVoucher(ptovta, 11); // 11 = Factura C
       const cbteNro = lastVoucher + 1;
 
-      const dateStr = parseInt(new Date().toISOString().split('T')[0].replace(/-/g, ''));
+      const invoiceDate = invoice.date ? invoice.date.split('T')[0].replace(/-/g, '') : new Date().toISOString().split('T')[0].replace(/-/g, '');
+      const dateStr = parseInt(invoiceDate);
 
       const data = {
         'CantReg' 	: 1, // Cantidad de comprobantes

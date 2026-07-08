@@ -178,7 +178,8 @@ export default function InvoiceDesignSettings() {
     { id: "blue", name: "Azul Profesional", primary: "bg-[#1e3a8a]", secondary: "bg-[#60a5fa]" },
     { id: "emerald", name: "Verde Esmeralda", primary: "bg-[#064e3b]", secondary: "bg-[#34d299]" },
     { id: "amber", name: "Ámbar Premium", primary: "bg-[#78350f]", secondary: "bg-[#fbc124]" },
-    { id: "monochrome", name: "Monocromo", primary: "bg-[#000000]", secondary: "bg-[#71717a]" }
+    { id: "monochrome", name: "Monocromo", primary: "bg-[#000000]", secondary: "bg-[#71717a]" },
+    { id: "soft_white", name: "Blanco Minimalista", primary: "bg-[#f1f5f9] border border-primary/20", secondary: "bg-[#cbd5e1]" }
   ];
 
   return (
