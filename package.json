@@ -34,15 +34,15 @@
       "target": [
         "nsis"
       ],
-      "icon": "public/lynx-icon.png"
+      "icon": "public/lynx-icon.png",
+      "disableWebInstaller": true
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Factureando",
-      "disableWebInstaller": true
+      "shortcutName": "Factureando"
     },
     "files": [
       "dist/**/*",
