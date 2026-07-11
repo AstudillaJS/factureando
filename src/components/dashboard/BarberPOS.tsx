@@ -2,51 +2,63 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Scissors, Plus, Minus } from "lucide-react";
 
+const DEFAULT_PRODUCTS = [
+  { id: "corteCabello", name: "Corte de Cabello", price: 22000 },
+  { id: "perfiladoCejas", name: "Perfilado de Cejas", price: 15000 },
+  { id: "recorteBarba", name: "Recorte de Barba", price: 22000 },
+  { id: "afeitadoTradicional", name: "Afeitado Tradicional", price: 22000 },
+  { id: "completoDeluxe", name: "Completo Deluxe", price: 44000 },
+  { id: "cortePerfilado", name: "Corte + Perfilado", price: 33000 }
+];
+
 export default function BarberPOS() {
   const [config, setConfig] = useState<any>({});
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [counts, setCounts] = useState({
-    corteCabello: 0,
-    perfiladoCejas: 0,
-    recorteBarba: 0,
-    afeitadoTradicional: 0,
-    completoDeluxe: 0,
-    cortePerfilado: 0
-  });
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [status, setStatus] = useState<{msg: string, type: 'success'|'error'} | null>(null);
 
   useEffect(() => {
-    fetch("/api/config").then(res => res.json()).then(setConfig).catch(console.error);
+    fetch("/api/config")
+      .then(res => res.json())
+      .then(data => {
+        // Migración idéntica si no existe posProducts
+        if (!data.posProducts) {
+          const oldPrices = data.barberPrices || {};
+          data.posProducts = DEFAULT_PRODUCTS.map(p => ({
+            ...p,
+            price: oldPrices[p.id] !== undefined ? oldPrices[p.id] : p.price
+          }));
+        }
+        if (!data.businessName) {
+          data.businessName = "Barbería";
+        }
+        setConfig(data);
+
+        // Inicializar contadores en cero para cada producto
+        const initialCounts: Record<string, number> = {};
+        data.posProducts.forEach((p: any) => {
+          initialCounts[p.id] = 0;
+        });
+        setCounts(initialCounts);
+      })
+      .catch(console.error);
   }, []);
 
-  const prices = config.barberPrices || {
-    corteCabello: 0,
-    perfiladoCejas: 0,
-    recorteBarba: 0,
-    afeitadoTradicional: 0,
-    completoDeluxe: 0,
-    cortePerfilado: 0
-  };
+  const businessName = config.businessName || "Barbería";
+  const products = config.posProducts || DEFAULT_PRODUCTS;
 
   const calculateTotal = () => {
-    return (
-      counts.corteCabello * prices.corteCabello +
-      counts.perfiladoCejas * prices.perfiladoCejas +
-      counts.recorteBarba * prices.recorteBarba +
-      counts.afeitadoTradicional * prices.afeitadoTradicional +
-      counts.completoDeluxe * prices.completoDeluxe +
-      counts.cortePerfilado * prices.cortePerfilado
-    );
+    return products.reduce((sum: number, p: any) => sum + (counts[p.id] || 0) * (p.price || 0), 0);
   };
 
   const total = calculateTotal();
 
-  const handleInc = (key: keyof typeof counts) => setCounts(prev => ({ ...prev, [key]: prev[key] + 1 }));
-  const handleDec = (key: keyof typeof counts) => setCounts(prev => ({ ...prev, [key]: Math.max(0, prev[key] - 1) }));
+  const handleInc = (id: string) => setCounts(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  const handleDec = (id: string) => setCounts(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }));
 
   const generateGlobalInvoice = async () => {
     if (total === 0) {
-      setStatus({ msg: "NO HAY SERVICIOS CARGADOS", type: 'error' });
+      setStatus({ msg: "NO HAY ÍTEMS CARGADOS", type: 'error' });
       return;
     }
 
@@ -62,9 +74,9 @@ export default function BarberPOS() {
         type: 'C',
         clientCuit: '0',
         clientName: 'CONSUMIDOR FINAL',
-        description: `Servicios de Barbería del día ${date}`,
+        description: `Servicios de ${businessName} del día ${date}`,
         method: 'manual',
-        status: 'pending' // For now pending draft
+        status: 'pending'
       };
 
       const res = await fetch("/api/invoices", {
@@ -75,10 +87,14 @@ export default function BarberPOS() {
       const data = await res.json();
       if (data.success) {
         setStatus({ msg: "JORNADA FACTURADA COMO BORRADOR CON ÉXITO", type: 'success' });
-        setCounts({
-          corteCabello: 0, perfiladoCejas: 0, recorteBarba: 0,
-          afeitadoTradicional: 0, completoDeluxe: 0, cortePerfilado: 0
+        
+        // Resetear contadores a cero
+        const resetCounts: Record<string, number> = {};
+        products.forEach((p: any) => {
+          resetCounts[p.id] = 0;
         });
+        setCounts(resetCounts);
+
         setTimeout(() => setStatus(null), 4000);
       } else {
         setStatus({ msg: "ERROR AL FACTURAR JORNADA", type: 'error' });
@@ -88,18 +104,18 @@ export default function BarberPOS() {
     }
   };
 
-  const ServiceItem = ({ label, prop, price }: { label: string, prop: keyof typeof counts, price: number }) => (
+  const ServiceItem = ({ label, id, price }: { label: string, id: string, price: number }) => (
     <div className="flex items-center justify-between p-3 border border-primary/20 bg-black/20">
       <div>
         <div className="text-[10px] uppercase tracking-widest text-primary font-bold">{label}</div>
         <div className="text-xs font-mono text-gray-400">${price} c/u</div>
       </div>
       <div className="flex items-center gap-4">
-        <button onClick={() => handleDec(prop)} className="w-8 h-8 flex items-center justify-center border border-primary/40 hover:bg-primary/20 text-primary transition-colors">
+        <button onClick={() => handleDec(id)} className="w-8 h-8 flex items-center justify-center border border-primary/40 hover:bg-primary/20 text-primary transition-colors">
           <Minus size={14} />
         </button>
-        <span className="font-mono text-xl w-6 text-center">{counts[prop]}</span>
-        <button onClick={() => handleInc(prop)} className="w-8 h-8 flex items-center justify-center border border-primary/40 hover:bg-primary/20 text-primary transition-colors">
+        <span className="font-mono text-xl w-6 text-center">{counts[id] || 0}</span>
+        <button onClick={() => handleInc(id)} className="w-8 h-8 flex items-center justify-center border border-primary/40 hover:bg-primary/20 text-primary transition-colors">
           <Plus size={14} />
         </button>
       </div>
@@ -114,7 +130,7 @@ export default function BarberPOS() {
 
       <div className="flex justify-between items-center mb-6 relative z-10">
         <h2 className="text-2xl font-black text-primary tracking-tighter uppercase italic flex items-center gap-2">
-          <Scissors size={24} /> TERMINAL DE CARGA: BARBERÍA
+          <Scissors size={24} /> TERMINAL DE CARGA: {businessName.toUpperCase()}
         </h2>
         <div className="flex items-center gap-4">
           <label className="text-[10px] text-primary/70 uppercase tracking-widest font-bold">FECHA DE JORNADA:</label>
@@ -138,12 +154,14 @@ export default function BarberPOS() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-        <ServiceItem label="1. Cortes de cabello" prop="corteCabello" price={prices.corteCabello} />
-        <ServiceItem label="2. Perfilados de cejas" prop="perfiladoCejas" price={prices.perfiladoCejas} />
-        <ServiceItem label="3. Recorte de barba" prop="recorteBarba" price={prices.recorteBarba} />
-        <ServiceItem label="4. Afeitado tradicional" prop="afeitadoTradicional" price={prices.afeitadoTradicional} />
-        <ServiceItem label="5. Completo deluxe" prop="completoDeluxe" price={prices.completoDeluxe} />
-        <ServiceItem label="6. Corte + Perfilado de barba" prop="cortePerfilado" price={prices.cortePerfilado} />
+        {products.map((prod: any, idx: number) => (
+          <ServiceItem 
+            key={prod.id || idx} 
+            label={`${idx + 1}. ${prod.name}`} 
+            id={prod.id} 
+            price={prod.price} 
+          />
+        ))}
       </div>
 
       <div className="mt-8 flex items-center justify-between border-t border-primary/20 pt-6 relative z-10">
