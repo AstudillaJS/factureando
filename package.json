@@ -34,8 +34,7 @@
       "target": [
         "nsis"
       ],
-      "icon": "public/lynx-icon.png",
-      "disableWebInstaller": true
+      "icon": "public/lynx-icon.png"
     },
     "nsis": {
       "oneClick": false,

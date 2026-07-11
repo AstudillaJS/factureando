@@ -3,6 +3,7 @@ import IncomeGoal from "./dashboard/IncomeGoal";
 import MonotributoProjection from "./dashboard/MonotributoProjection";
 import InvoiceHistory from "./dashboard/InvoiceHistory";
 import BarberPOS from "./dashboard/BarberPOS";
+import SalesStats from "./dashboard/SalesStats";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -72,10 +73,12 @@ export default function Dashboard() {
         <div className="text-right font-mono text-[10px] text-primary/40 uppercase tracking-[0.3em]">
            ESTADO DEL SISTEMA: OPERATIVO <br />
            NODO DE DATOS: ACTIVO
-        </div>
+         </div>
       </header>
 
       <BarberPOS />
+
+      <SalesStats />
 
       <IncomeGoal />
       <MonotributoProjection />

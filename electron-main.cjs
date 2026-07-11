@@ -6,6 +6,7 @@ const log = require('electron-log');
 // Configurar logger para auto-updater
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
+autoUpdater.disableWebInstaller = true;
 
 let mainWindow;
 let expressServer;
