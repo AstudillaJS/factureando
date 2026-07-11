@@ -1,7 +1,7 @@
 {
   "name": "factureando",
   "private": true,
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Sistema de Facturación Automática para Monotributistas",
   "main": "electron-main.cjs",
   "author": "AstudillaJS",
@@ -41,7 +41,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Factureando"
+      "shortcutName": "Factureando",
+      "disableWebInstaller": true
     },
     "files": [
       "dist/**/*",
