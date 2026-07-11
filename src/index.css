@@ -102,19 +102,31 @@
 
 @layer base {
   body {
-    @apply bg-bg-dark text-gray-400 font-sans antialiased overflow-x-hidden;
+    background-color: var(--bg-dark);
+    color: var(--text-muted);
+    @apply font-sans antialiased overflow-x-hidden;
   }
   
   .os-grid {
     background-image: radial-gradient(circle at center, var(--primary) 0.5px, transparent 0.5px);
     background-size: 24px 24px;
-    opacity: 0.1;
+    opacity: 0.05;
   }
 }
 
 @layer components {
   .os-card {
-    @apply bg-card-bg border border-border-amber rounded-sm p-8 mb-8 shadow-[0_4px_20px_rgba(0,0,0,0.5)];
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    @apply rounded-2xl p-8 mb-8 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] transition-all duration-300;
+  }
+
+  [data-theme='light'] .os-card {
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    @apply shadow-[0_8px_32px_0_rgba(31,38,135,0.06)];
   }
   
   .os-section-title {
@@ -122,18 +134,51 @@
   }
 
   .os-input {
-    @apply bg-black border border-border-amber rounded-sm px-4 py-3 text-primary font-mono text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 placeholder:text-gray-800 uppercase tracking-tight;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--primary);
+    @apply rounded-xl px-4 py-3 font-mono text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 placeholder:text-gray-700 uppercase tracking-tight;
+  }
+
+  [data-theme='light'] .os-input {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: var(--primary);
+    @apply placeholder:text-gray-400;
   }
 
   .os-button {
-    @apply border border-primary/40 text-primary px-6 py-2 uppercase tracking-[0.2em] text-[10px] font-bold hover:bg-primary hover:text-black transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-primary/30 active:scale-95;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.02);
+    @apply rounded-xl text-primary px-6 py-3 uppercase tracking-[0.2em] text-[10px] font-bold hover:bg-primary hover:text-black transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-primary/30 active:scale-95;
+  }
+
+  [data-theme='light'] .os-button {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.02);
   }
 
   .os-checkbox {
-    @apply w-5 h-5 border border-primary/40 bg-black checked:bg-primary appearance-none cursor-pointer relative after:content-[''] after:absolute after:hidden checked:after:block after:left-1.5 after:top-0.5 after:w-1.5 after:h-3 after:border-r-2 after:border-b-2 after:border-black after:rotate-45 transition-all duration-200;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    @apply w-5 h-5 checked:bg-primary appearance-none cursor-pointer rounded-md relative after:content-[''] after:absolute after:hidden checked:after:block after:left-1.5 after:top-0.5 after:w-1.5 after:h-3 after:border-r-2 after:border-b-2 after:border-black after:rotate-45 transition-all duration-200;
+  }
+
+  [data-theme='light'] .os-checkbox {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.15);
   }
 
   .glass-panel {
-    @apply bg-primary/5 border border-primary/10 rounded-sm backdrop-blur-sm;
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    @apply rounded-xl p-4;
+  }
+
+  [data-theme='light'] .glass-panel {
+    background-color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(0, 0, 0, 0.05);
   }
 }

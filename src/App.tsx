@@ -62,8 +62,12 @@ function AppContent() {
 
   return (
     <div className={`min-h-screen bg-bg-dark text-white selection:bg-primary selection:text-black overflow-hidden relative`}>
+      {/* Background Glows for Organic Glassmorphism */}
+      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tr from-violet-600/10 to-indigo-600/10 blur-[120px] pointer-events-none z-0"></div>
+      <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-fuchsia-600/10 to-pink-600/10 blur-[150px] pointer-events-none z-0"></div>
+
       {/* Background Grid */}
-      <div className="fixed inset-0 os-grid pointer-events-none"></div>
+      <div className="fixed inset-0 os-grid pointer-events-none z-10"></div>
 
       {displayMode === 'topbar' && (
         <nav className="fixed top-0 left-0 w-full border-b border-border-amber z-50">
