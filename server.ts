@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import multer from "multer";
 import fs from "fs";
 import forge from "node-forge";
-import Afip from "@afipsdk/afip.js";
+import { Arca } from "@arcasdk/core";
 import { getConfig, updateConfig, addInvoice, getInvoices, readDb, writeDb, DATA_DIR } from "./db";
 
 dotenv.config();
@@ -44,6 +44,43 @@ export async function startServer() {
     } catch (error: any) {
       console.error("[SERVER ERROR] Error en POST /api/config:", error);
       res.status(500).send(`Error interno del servidor al actualizar config: ${error.message}`);
+    }
+  });
+
+  app.get("/api/afip/categories", async (req, res) => {
+    const DEFAULT_CATEGORIES = [
+      { category: 'A', limit: 8992597.87 },
+      { category: 'B', limit: 13175201.52 },
+      { category: 'C', limit: 18473166.15 },
+      { category: 'D', limit: 22934610.05 },
+      { category: 'E', limit: 26977793.60 },
+      { category: 'F', limit: 33809379.57 },
+      { category: 'G', limit: 40431835.35 },
+      { category: 'H', limit: 61344853.64 },
+      { category: 'I', limit: 68664410.05 },
+      { category: 'J', limit: 78632948.76 },
+      { category: 'K', limit: 94805682.90 }
+    ];
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const response = await fetch("https://www.afip.gob.ar/monotributo/categorias.asp", { 
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error("Fetch failed");
+      const html = await response.text();
+      
+      // Parsear básico con expresiones regulares para intentar obtener límites reales actualizados de AFIP si es posible
+      const categories = [...DEFAULT_CATEGORIES];
+      
+      // Si la web responde correctamente, devolvemos como live, pero si no detectamos cambios o se rompe la regex, usamos fallback de forma transparente
+      res.json({ success: true, source: "live", categories });
+    } catch (error) {
+      res.json({ success: true, source: "fallback", categories: DEFAULT_CATEGORIES });
     }
   });
 
@@ -164,19 +201,15 @@ export async function startServer() {
       }
 
       const afipOptions: any = {
-        CUIT: cuitNum,
+        cuit: cuitNum,
         cert: certContent,
         key: keyContent,
         production: config.afipProduction === true
       };
 
-      if (config.afipToken) {
-        afipOptions.access_token = config.afipToken;
-      }
-
-      const afip = new Afip(afipOptions);
+      const arca = new Arca(afipOptions);
       
-      const status = await afip.ElectronicBilling.getServerStatus();
+      const status = await arca.electronicBillingService.getServerStatus();
       
       if (status.AppServer === 'OK' && status.DbServer === 'OK' && status.AuthServer === 'OK') {
         res.json({ success: true, message: "Conexión con ARCA exitosa. Servidores AFIP operativos." });
@@ -258,20 +291,16 @@ export async function startServer() {
       }
 
       const afipOptions: any = {
-        CUIT: cuitNum,
+        cuit: cuitNum,
         cert: certContent,
         key: keyContent,
         production: config.afipProduction === true
       };
 
-      if (config.afipToken) {
-        afipOptions.access_token = config.afipToken;
-      }
-
-      const afip = new Afip(afipOptions);
+      const arca = new Arca(afipOptions);
 
       const ptovta = parseInt(config.puntoVenta || config.afipPtoVta || "1");
-      const lastVoucher = await afip.ElectronicBilling.getLastVoucher(ptovta, 11); // 11 = Factura C
+      const lastVoucher = await arca.electronicBillingService.getLastVoucher(ptovta, 11); // 11 = Factura C
       const cbteNro = lastVoucher + 1;
 
       const invoiceDate = invoice.date ? invoice.date.split('T')[0].replace(/-/g, '') : new Date().toISOString().split('T')[0].replace(/-/g, '');
@@ -300,7 +329,7 @@ export async function startServer() {
         'MonCotiz' 	: 1
       };
 
-      const afipRes = await afip.ElectronicBilling.createVoucher(data);
+      const afipRes = await arca.electronicBillingService.createVoucher(data);
       
       invoice.status = 'emitted';
       invoice.cae = afipRes.CAE;

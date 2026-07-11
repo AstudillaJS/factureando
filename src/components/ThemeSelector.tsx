@@ -6,6 +6,7 @@ const themes = [
   { id: 'cyberpunk', name: 'Cyberpunk', desc: 'Neon and electric vibes', icon: <Zap size={16} className="text-amber-500" /> },
   { id: 'matrix', name: 'Matrix', desc: 'Green screen retro', icon: <Circle size={16} className="text-green-500 fill-green-500" /> },
   { id: 'minimal', name: 'Minimal', desc: 'Clean and simple', icon: <Square size={16} className="text-white" /> },
+  { id: 'light', name: 'Claro', desc: 'Light Minimalist', icon: <Square size={16} className="text-primary" /> },
   { id: 'deep-ocean', name: 'Deep Ocean', desc: 'Underwater serenity', icon: <Waves size={16} className="text-blue-500" /> },
   { id: 'harry-potter', name: 'Harry Potter', desc: 'Magical gold theme', icon: <Sparkles size={16} className="text-yellow-500" /> },
   { id: 'marvel', name: 'Marvel', desc: 'Power and action', icon: <Circle size={16} className="text-red-600 fill-red-600" /> },
@@ -23,22 +24,22 @@ export default function ThemeSelector() {
         <h2 className="text-lg font-black tracking-[0.2em] uppercase italic">THEME SELECTOR</h2>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 border border-white/10 rounded-sm overflow-hidden mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 border border-white/10 rounded-sm overflow-hidden mb-6">
         {themes.map((t) => (
           <button
             key={t.id}
             onClick={() => setTheme(t.id)}
             className={`flex flex-col items-center justify-center p-4 border border-white/10 transition-all duration-300 gap-2 min-h-[100px] group ${
-              activeTheme === t.id ? 'bg-primary/10 border-primary ring-1 ring-primary/20 scale-100 z-10' : 'bg-white hover:bg-gray-100'
+              activeTheme === t.id ? 'bg-primary/10 border-primary ring-1 ring-primary/20 scale-100 z-10' : 'bg-card-bg/40 hover:bg-primary/5'
             }`}
           >
             <div className="flex items-center gap-2">
               {t.icon}
-              <span className={`text-[10px] font-black uppercase tracking-widest ${activeTheme === t.id ? 'text-primary' : 'text-black'}`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${activeTheme === t.id ? 'text-primary' : 'text-white'}`}>
                 {t.name}
               </span>
             </div>
-            <p className={`text-[8px] text-center leading-tight uppercase font-bold tracking-tighter ${activeTheme === t.id ? 'text-primary/70' : 'text-gray-500'}`}>
+            <p className={`text-[8px] text-center leading-tight uppercase font-bold tracking-tighter ${activeTheme === t.id ? 'text-primary/70' : 'text-gray-400'}`}>
               {t.desc}
             </p>
           </button>

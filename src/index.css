@@ -7,6 +7,12 @@
   --color-card-bg: var(--card-bg);
   --color-border-amber: var(--border-color);
   
+  --color-white: var(--text-white);
+  --color-black: var(--text-black);
+  --color-gray-400: var(--text-muted);
+  --color-gray-500: var(--text-muted);
+  --color-gray-600: var(--text-muted-dark);
+  
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
@@ -17,6 +23,24 @@
   --bg-dark: #070707;
   --card-bg: #111111;
   --border-color: rgba(245, 158, 11, 0.2);
+  
+  --text-white: #ffffff;
+  --text-black: #000000;
+  --text-muted: #94a3b8;
+  --text-muted-dark: #4b5563;
+}
+
+[data-theme='light'] {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --bg-dark: #f8fafc;
+  --card-bg: #ffffff;
+  --border-color: rgba(37, 99, 235, 0.15);
+  
+  --text-white: #0f172a;
+  --text-black: #ffffff;
+  --text-muted: #475569;
+  --text-muted-dark: #cbd5e1;
 }
 
 /* Theme definitions */

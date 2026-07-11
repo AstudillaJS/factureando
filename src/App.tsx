@@ -61,7 +61,7 @@ function AppContent() {
   );
 
   return (
-    <div className={`min-h-screen bg-black text-white selection:bg-primary selection:text-black overflow-hidden relative`}>
+    <div className={`min-h-screen bg-bg-dark text-white selection:bg-primary selection:text-black overflow-hidden relative`}>
       {/* Background Grid */}
       <div className="fixed inset-0 os-grid pointer-events-none"></div>
 
