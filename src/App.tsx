@@ -19,6 +19,7 @@ import BarberConfig from "./components/BarberConfig";
 import InvoiceDesignSettings from "./components/InvoiceDesignSettings";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import OnboardingWizard from "./components/OnboardingWizard";
+import ProfileSwitcher from "./components/ProfileSwitcher";
 
 type Tabs = "dashboard" | "billing" | "config";
 
@@ -36,6 +37,12 @@ function AppContent() {
         }
       })
       .catch(console.error);
+
+    // Registrar trigger global para abrir asistente
+    (window as any).showOnboardingWizard = () => setShowWizard(true);
+    return () => {
+      delete (window as any).showOnboardingWizard;
+    };
   }, []);
 
   const isFloating = displayMode === 'floating';
@@ -67,8 +74,11 @@ function AppContent() {
         />
       </div>
       
-      <div className={`text-[8px] text-primary/50 uppercase tracking-[0.2em] font-black italic ${displayMode === 'topbar' ? '' : '[writing-mode:vertical-rl] opacity-50'}`}>
-        CHRONOS LABOR OS v2.3.84
+      <div className="flex items-center gap-4">
+        <ProfileSwitcher />
+        <div className={`text-[8px] text-primary/50 uppercase tracking-[0.2em] font-black italic ${displayMode === 'topbar' ? '' : '[writing-mode:vertical-rl] opacity-50'}`}>
+          CHRONOS LABOR OS v2.3.84
+        </div>
       </div>
     </div>
   );

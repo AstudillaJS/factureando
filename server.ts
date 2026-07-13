@@ -5,7 +5,7 @@ import multer from "multer";
 import fs from "fs";
 import forge from "node-forge";
 import { Arca } from "@arcasdk/core";
-import { getConfig, updateConfig, addInvoice, getInvoices, readDb, writeDb, DATA_DIR } from "./db";
+import { getActiveProfile, updateActiveProfile, getProfiles, setActiveProfileId, addProfile, deleteProfile, addInvoice, getInvoices, readDb, writeDb, DATA_DIR } from "./db";
 
 dotenv.config();
 
@@ -24,7 +24,7 @@ const upload = multer({ storage });
 
 export async function startServer() {
   const app = express();
-  const PORT = 3010;
+  const PORT = parseInt(process.env.PORT || "3010", 10);
 
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -32,19 +32,50 @@ export async function startServer() {
   // --- Endpoints de Base de Datos Local --- //
   
   app.get("/api/config", (req, res) => {
-    res.json(getConfig());
+    res.json(getActiveProfile());
   });
 
   app.post("/api/config", (req, res) => {
     try {
       const payloadString = JSON.stringify(req.body);
       console.log(`[SERVER] POST /api/config. Tamaño del payload recibido: ${(payloadString.length / 1024).toFixed(2)} KB`);
-      const newConfig = updateConfig(req.body);
+      const newConfig = updateActiveProfile(req.body);
       res.json({ success: true, config: newConfig });
     } catch (error: any) {
       console.error("[SERVER ERROR] Error en POST /api/config:", error);
       res.status(500).send(`Error interno del servidor al actualizar config: ${error.message}`);
     }
+  });
+
+  // --- Endpoints de Perfiles de Contribuyentes --- //
+
+  app.get("/api/profiles", (req, res) => {
+    res.json(getProfiles());
+  });
+
+  app.post("/api/profiles", (req, res) => {
+    const newProfile = addProfile(req.body);
+    if (newProfile) {
+      res.json({ success: true, profile: newProfile });
+    } else {
+      res.status(400).json({ success: false, message: "El contribuyente (CUIT) ya está registrado." });
+    }
+  });
+
+  app.post("/api/profiles/active", (req, res) => {
+    const { id } = req.body;
+    const success = setActiveProfileId(id);
+    if (success) {
+      res.json({ success: true, activeProfileId: id });
+    } else {
+      res.status(404).json({ success: false, message: "Perfil no encontrado." });
+    }
+  });
+
+  app.delete("/api/profiles/:id", (req, res) => {
+    const { id } = req.params;
+    const success = deleteProfile(id);
+    res.json({ success });
   });
 
   app.get("/api/afip/categories", async (req, res) => {
@@ -114,7 +145,7 @@ export async function startServer() {
     if (files.crt && files.crt[0]) updates.afipCrtPath = files.crt[0].path;
     if (files.key && files.key[0]) updates.afipKeyPath = files.key[0].path;
     
-    updateConfig(updates);
+    updateActiveProfile(updates);
     res.json({ success: true, message: "Certificados cargados y guardados en DB local." });
   });
 
@@ -175,7 +206,7 @@ export async function startServer() {
   });
 
   app.post("/api/afip/test", async (req, res) => {
-    const config = getConfig();
+    const config = getActiveProfile();
     if (!config.afipCrtPath || !config.afipKeyPath || !config.afipCuit) {
       return res.status(400).json({ success: false, message: "Faltan certificados AFIP o CUIT configurados." });
     }
@@ -228,7 +259,7 @@ export async function startServer() {
 
   app.post("/api/afip/generate-csr", (req, res) => {
     try {
-      const config = getConfig();
+      const config = getActiveProfile();
       if (!config.razonSocial || !config.afipCuit) {
         return res.status(400).json({ success: false, message: "Falta Razón Social o CUIT en la configuración." });
       }
@@ -260,7 +291,7 @@ export async function startServer() {
       fs.writeFileSync(keyPath, privateKeyPem);
 
       // Actualizar config
-      updateConfig({ afipKeyPath: keyPath });
+      updateActiveProfile({ afipKeyPath: keyPath });
 
       // Devolver CSR para que el cliente lo descargue
       res.json({
@@ -278,7 +309,7 @@ export async function startServer() {
     try {
       const { id } = req.body;
       const db = readDb();
-      const config = getConfig();
+      const config = getActiveProfile();
       
       const invoice = db.invoices.find((inv: any) => inv.id === id);
       if (!invoice) return res.status(404).json({ success: false, message: "Factura no encontrada." });
@@ -359,7 +390,7 @@ export async function startServer() {
     }
     
     // Guardar en la DB local
-    updateConfig({ mpToken: accessToken });
+    updateActiveProfile({ mpToken: accessToken });
     
     try {
       const resp = await fetch("https://api.mercadopago.com/users/me", {

@@ -14,16 +14,10 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Default structure
+// Estructura por defecto para perfiles múltiples
 const defaultData = {
-  config: {
-    mpToken: '',
-    afipCrtPath: '',
-    afipKeyPath: '',
-    afipCuit: '',
-    afipProduction: true,
-    afipToken: ''
-  },
+  profiles: [], // Array de perfiles de contribuyentes
+  activeProfileId: '', // ID (CUIT) del perfil de contribuyente activo
   invoices: [],
   clients: []
 };
@@ -37,9 +31,48 @@ export function readDb() {
   try {
     const data = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(data);
-    if (parsed.config && parsed.config.afipProduction === undefined) {
-      parsed.config.afipProduction = true;
+
+    // MIGRACIÓN AUTOMÁTICA: Si existe el antiguo config único, migrarlo a la estructura multiperfil
+    if (parsed.config) {
+      const oldConfig = parsed.config;
+      const primaryCuit = oldConfig.afipCuit || 'default';
+      
+      const migratedProfile = {
+        id: primaryCuit,
+        businessName: oldConfig.businessName || 'Mi Barbería',
+        afipCuit: oldConfig.afipCuit || '',
+        monotributoCategory: oldConfig.monotributoCategory || 'A',
+        puntoVenta: parseInt(oldConfig.puntoVenta || oldConfig.afipPtoVta || '1'),
+        afipCrtPath: oldConfig.afipCrtPath || '',
+        afipKeyPath: oldConfig.afipKeyPath || '',
+        afipProduction: oldConfig.afipProduction !== undefined ? oldConfig.afipProduction : true,
+        afipToken: oldConfig.afipToken || '',
+        mpToken: oldConfig.mpToken || '',
+        invoiceLogo: oldConfig.invoiceLogo || '',
+        themeColor: oldConfig.themeColor || '',
+        theme: oldConfig.theme || 'cyberpunk',
+        posProducts: oldConfig.posProducts || []
+      };
+
+      parsed.profiles = [migratedProfile];
+      parsed.activeProfileId = migratedProfile.id;
+      delete parsed.config;
+
+      // Migrar facturas históricas asociándolas al cuit antiguo
+      if (Array.isArray(parsed.invoices)) {
+        parsed.invoices = parsed.invoices.map((inv: any) => ({
+          ...inv,
+          profileId: inv.profileId || primaryCuit
+        }));
+      }
+
+      writeDb(parsed);
+      console.log(`[MIGRACIÓN LOCAL COMPLETA] Se migró la configuración antigua al perfil CUIT: ${primaryCuit}`);
     }
+
+    if (!parsed.profiles) parsed.profiles = [];
+    if (parsed.activeProfileId === undefined) parsed.activeProfileId = '';
+
     return parsed;
   } catch (error) {
     console.error('Error reading DB:', error);
@@ -57,43 +90,174 @@ export function writeDb(data: any) {
   }
 }
 
-export function updateConfig(newConfig: any) {
-  const db = readDb();
-  db.config = { ...db.config, ...newConfig };
-  
-  // Sincronizar puntoVenta y afipPtoVta
-  if (db.config.puntoVenta !== undefined) {
-    db.config.afipPtoVta = db.config.puntoVenta;
-  } else if (db.config.afipPtoVta !== undefined) {
-    db.config.puntoVenta = db.config.afipPtoVta;
-  }
-  
-  const success = writeDb(db);
-  if (!success) {
-    throw new Error(`No se pudo escribir físicamente en el archivo de base de datos db.json. Ruta: ${DB_FILE}`);
-  }
-  return db.config;
+// --- MÉTODOS DE PERFILES DE CONTRIBUYENTES --- //
+
+export function getProfiles() {
+  return readDb().profiles || [];
 }
 
-export function getConfig() {
-  const config = readDb().config;
-  
-  // Sincronizar puntoVenta y afipPtoVta
-  if (config.puntoVenta && !config.afipPtoVta) {
-    config.afipPtoVta = config.puntoVenta;
-  } else if (config.afipPtoVta && !config.puntoVenta) {
-    config.puntoVenta = config.afipPtoVta;
-  }
-  
-  return config;
+export function getActiveProfile() {
+  const db = readDb();
+  const profiles = db.profiles || [];
+  const activeId = db.activeProfileId;
+
+  const active = profiles.find((p: any) => p.id === activeId);
+  if (active) return active;
+  if (profiles.length > 0) return profiles[0];
+
+  // Si no hay perfiles, retornar una plantilla vacía
+  return {
+    id: '',
+    businessName: '',
+    afipCuit: '',
+    monotributoCategory: 'A',
+    puntoVenta: 1,
+    afipCrtPath: '',
+    afipKeyPath: '',
+    afipProduction: true,
+    afipToken: '',
+    mpToken: '',
+    invoiceLogo: '',
+    themeColor: '',
+    theme: 'cyberpunk',
+    posProducts: []
+  };
 }
+
+export function updateActiveProfile(updates: any) {
+  const db = readDb();
+  const profiles = db.profiles || [];
+  const activeId = db.activeProfileId || (profiles[0] ? profiles[0].id : '');
+
+  let profileIndex = profiles.findIndex((p: any) => p.id === activeId);
+
+  // Si no existe perfiles, crearlo
+  if (profileIndex === -1) {
+    const newProfile = {
+      id: updates.afipCuit || 'default',
+      businessName: '',
+      afipCuit: '',
+      monotributoCategory: 'A',
+      puntoVenta: 1,
+      afipCrtPath: '',
+      afipKeyPath: '',
+      afipProduction: true,
+      afipToken: '',
+      mpToken: '',
+      invoiceLogo: '',
+      themeColor: '',
+      theme: 'cyberpunk',
+      posProducts: [],
+      ...updates
+    };
+    profiles.push(newProfile);
+    db.activeProfileId = newProfile.id;
+  } else {
+    // Si cambia el CUIT (id), actualizar la referencia del ID del perfil
+    const oldId = profiles[profileIndex].id;
+    const nextId = updates.afipCuit !== undefined ? updates.afipCuit : oldId;
+
+    profiles[profileIndex] = {
+      ...profiles[profileIndex],
+      ...updates,
+      id: nextId
+    };
+
+    if (db.activeProfileId === oldId) {
+      db.activeProfileId = nextId;
+    }
+
+    // Migrar facturas del ID viejo al ID nuevo si el CUIT cambió
+    if (oldId !== nextId && oldId !== '') {
+      db.invoices = db.invoices.map((inv: any) => 
+        inv.profileId === oldId ? { ...inv, profileId: nextId } : inv
+      );
+    }
+  }
+
+  db.profiles = profiles;
+  writeDb(db);
+  return getActiveProfile();
+}
+
+export function setActiveProfileId(id: string) {
+  const db = readDb();
+  const exists = db.profiles.some((p: any) => p.id === id);
+  if (exists) {
+    db.activeProfileId = id;
+    writeDb(db);
+    return true;
+  }
+  return false;
+}
+
+export function addProfile(profile: any) {
+  const db = readDb();
+  const profiles = db.profiles || [];
+  const cuit = profile.afipCuit || 'new_profile_' + Date.now();
+  
+  // Evitar duplicados por CUIT
+  if (profiles.some((p: any) => p.id === cuit)) {
+    return false;
+  }
+
+  const newProfile = {
+    id: cuit,
+    businessName: profile.businessName || 'Nuevo Negocio',
+    afipCuit: profile.afipCuit || '',
+    monotributoCategory: profile.monotributoCategory || 'A',
+    puntoVenta: parseInt(profile.puntoVenta) || 1,
+    afipCrtPath: profile.afipCrtPath || '',
+    afipKeyPath: profile.afipKeyPath || '',
+    afipProduction: profile.afipProduction !== undefined ? profile.afipProduction : true,
+    afipToken: '',
+    mpToken: '',
+    invoiceLogo: profile.invoiceLogo || '',
+    themeColor: profile.themeColor || '',
+    theme: profile.theme || 'cyberpunk',
+    posProducts: profile.posProducts || []
+  };
+
+  profiles.push(newProfile);
+  db.profiles = profiles;
+  db.activeProfileId = newProfile.id;
+  writeDb(db);
+  return newProfile;
+}
+
+export function deleteProfile(id: string) {
+  const db = readDb();
+  db.profiles = (db.profiles || []).filter((p: any) => p.id !== id);
+  
+  // Si eliminamos el activo, alternar al primero disponible
+  if (db.activeProfileId === id) {
+    db.activeProfileId = db.profiles[0] ? db.profiles[0].id : '';
+  }
+  writeDb(db);
+  return true;
+}
+
+// --- MÉTODOS DE FACTURAS SEGREGADOS POR PERFIL --- //
 
 export function addInvoice(invoice: any) {
   const db = readDb();
-  db.invoices.push({ id: Date.now().toString(), createdAt: new Date().toISOString(), ...invoice });
+  const activeProfile = getActiveProfile();
+  const profileId = activeProfile.id || 'default';
+  
+  db.invoices.push({ 
+    id: Date.now().toString(), 
+    createdAt: new Date().toISOString(), 
+    profileId, // Asociar al perfil emisor activo
+    ...invoice 
+  });
   writeDb(db);
 }
 
 export function getInvoices() {
-  return readDb().invoices;
+  const db = readDb();
+  const activeProfile = getActiveProfile();
+  const profileId = activeProfile.id || 'default';
+  
+  // Retornar solo las facturas del contribuyente activo
+  return (db.invoices || []).filter((inv: any) => inv.profileId === profileId);
 }
