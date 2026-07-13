@@ -209,9 +209,13 @@ export async function startServer() {
 
       const arca = new Arca(afipOptions);
       
-      const status = await arca.electronicBillingService.getServerStatus();
+      const status = await arca.electronicBillingService.getServerStatus() as any;
       
-      if (status.AppServer === 'OK' && status.DbServer === 'OK' && status.AuthServer === 'OK') {
+      const isAppOk = status.AppServer === 'OK' || status.appserver === 'OK';
+      const isDbOk = status.DbServer === 'OK' || status.dbserver === 'OK';
+      const isAuthOk = status.AuthServer === 'OK' || status.authserver === 'OK';
+
+      if (isAppOk && isDbOk && isAuthOk) {
         res.json({ success: true, message: "Conexión con ARCA exitosa. Servidores AFIP operativos." });
       } else {
         res.json({ success: false, message: "ARCA responde con intermitencias en sus servidores." });
@@ -301,7 +305,7 @@ export async function startServer() {
 
       const ptovta = parseInt(config.puntoVenta || config.afipPtoVta || "1");
       const lastVoucher = await arca.electronicBillingService.getLastVoucher(ptovta, 11); // 11 = Factura C
-      const cbteNro = lastVoucher + 1;
+      const cbteNro = (lastVoucher as any) + 1;
 
       const invoiceDate = invoice.date ? invoice.date.split('T')[0].replace(/-/g, '') : new Date().toISOString().split('T')[0].replace(/-/g, '');
       const dateStr = parseInt(invoiceDate);
@@ -329,11 +333,11 @@ export async function startServer() {
         'MonCotiz' 	: 1
       };
 
-      const afipRes = await arca.electronicBillingService.createVoucher(data);
+      const afipRes = await arca.electronicBillingService.createVoucher(data as any) as any;
       
       invoice.status = 'emitted';
-      invoice.cae = afipRes.CAE;
-      invoice.caeVto = afipRes.CAEFchVto;
+      invoice.cae = afipRes.cae || afipRes.CAE;
+      invoice.caeVto = afipRes.caeFchVto || afipRes.CAEFchVto;
       invoice.voucherNumber = cbteNro;
       invoice.ptoVta = ptovta;
       

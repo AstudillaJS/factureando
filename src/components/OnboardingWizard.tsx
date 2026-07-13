@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Shield, Sparkles, Building2, User, Key, CheckCircle, Upload, Play, Palette } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
