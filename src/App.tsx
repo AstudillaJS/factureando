@@ -18,12 +18,25 @@ import ThemeSelector from "./components/ThemeSelector";
 import BarberConfig from "./components/BarberConfig";
 import InvoiceDesignSettings from "./components/InvoiceDesignSettings";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import OnboardingWizard from "./components/OnboardingWizard";
 
 type Tabs = "dashboard" | "billing" | "config";
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<Tabs>("dashboard");
   const { displayMode } = useTheme();
+  const [showWizard, setShowWizard] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/config")
+      .then(res => res.json())
+      .then(data => {
+        if (!data.afipCuit || data.afipCuit === "") {
+          setShowWizard(true);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const isFloating = displayMode === 'floating';
 
@@ -62,6 +75,14 @@ function AppContent() {
 
   return (
     <div className={`min-h-screen bg-bg-dark text-white selection:bg-primary selection:text-black overflow-hidden relative`}>
+      {showWizard && (
+        <OnboardingWizard 
+          onComplete={() => {
+            setShowWizard(false);
+            window.location.reload(); // Recargar para aplicar tema color y configs
+          }}
+        />
+      )}
       {/* Background Glows for Organic Glassmorphism */}
       <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tr from-violet-600/10 to-indigo-600/10 blur-[120px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-fuchsia-600/10 to-pink-600/10 blur-[150px] pointer-events-none z-0"></div>

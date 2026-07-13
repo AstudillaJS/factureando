@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Image as ImageIcon, Upload, Save, Sliders, Palette, FileText, RefreshCw, FilePenLine } from "lucide-react";
 import { generateInvoicePDF } from "../utils/pdfGenerator";
+import { useTheme } from "../context/ThemeContext";
 
 const mockInvoice = {
   id: "2026-9999",
@@ -16,6 +17,7 @@ const mockInvoice = {
 };
 
 export default function InvoiceDesignSettings() {
+  const { setThemeColor, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'design' | 'logos' | 'spacing'>('design');
   const [saving, setSaving] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>("");
@@ -121,7 +123,30 @@ export default function InvoiceDesignSettings() {
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target?.result) {
-        setSettings(prev => ({ ...prev, invoiceLogo: event.target.result as string }));
+        const base64Data = event.target.result as string;
+        setSettings(prev => ({ ...prev, invoiceLogo: base64Data }));
+
+        // Extraer color dominante del logotipo cargado
+        const img = new Image();
+        img.src = base64Data;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1;
+          canvas.height = 1;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, 1, 1);
+            const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+            const hex = '#' + [r, g, b].map(x => {
+              const hexStr = x.toString(16);
+              return hexStr.length === 1 ? '0' + hexStr : hexStr;
+            }).join('');
+            
+            setSettings(prev => ({ ...prev, themeColor: hex }));
+            setThemeColor(hex);
+            setTheme('brand');
+          }
+        };
       }
     };
     reader.readAsDataURL(file);
