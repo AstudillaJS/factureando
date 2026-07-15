@@ -27,13 +27,40 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<Tabs>("dashboard");
   const { displayMode } = useTheme();
   const [showWizard, setShowWizard] = useState(false);
+  const [showStartupSelector, setShowStartupSelector] = useState(false);
+  const [profiles, setProfiles] = useState<any[]>([]);
+
+  const handleSelectStartupProfile = async (id: string) => {
+    try {
+      const res = await fetch("/api/profiles/active", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        sessionStorage.setItem("startupProfileSelected", "true");
+        setShowStartupSelector(false);
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
-    fetch("/api/config")
+    const startupProfileSelected = sessionStorage.getItem("startupProfileSelected");
+
+    fetch("/api/profiles")
       .then(res => res.json())
       .then(data => {
-        if (!data.afipCuit || data.afipCuit === "") {
-          setShowWizard(true);
+        if (Array.isArray(data)) {
+          setProfiles(data);
+          if (data.length === 0) {
+            setShowWizard(true);
+          } else if (data.length >= 2 && !startupProfileSelected) {
+            setShowStartupSelector(true);
+          }
         }
       })
       .catch(console.error);
@@ -92,6 +119,68 @@ function AppContent() {
             window.location.reload(); // Recargar para aplicar tema color y configs
           }}
         />
+      )}
+      {showStartupSelector && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[99999] flex items-center justify-center p-6 select-none">
+          <div className="max-w-2xl w-full text-center space-y-8">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="os-card border-primary/30 p-8 bg-black/80 relative shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-violet-600 to-primary"></div>
+              
+              <div className="flex flex-col items-center mb-6">
+                <div className="border border-primary/40 px-3 py-1.5 rounded-lg bg-primary/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)] mb-3">
+                  <span className="text-sm font-black text-primary font-mono tracking-widest">LYNX FACTURAS</span>
+                </div>
+                <h2 className="text-xl font-black tracking-widest text-primary uppercase italic">
+                  SELECCIONAR CONTRIBUYENTE
+                </h2>
+                <p className="text-[9px] text-gray-500 uppercase tracking-widest font-mono mt-1">
+                  Elegí el perfil de facturación para iniciar sesión
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-1 mb-6">
+                {profiles.map((p) => {
+                  const initials = p.businessName ? p.businessName.substring(0, 2).toUpperCase() : "CF";
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => handleSelectStartupProfile(p.id)}
+                      className="flex items-center gap-4 p-4 rounded-xl border border-white/5 hover:border-primary/40 bg-white/5 hover:bg-primary/5 transition-all text-left group shadow-md hover:shadow-primary/5 cursor-pointer active:scale-[0.99]"
+                    >
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center border border-white/10 bg-black/30 text-xs font-black text-white group-hover:border-primary group-hover:text-primary transition-all">
+                        {initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-black uppercase text-white block truncate leading-snug group-hover:text-primary transition-all">
+                          {p.businessName || "Contribuyente"}
+                        </span>
+                        <span className="text-[8px] font-mono text-gray-500 block mt-0.5 uppercase tracking-wide">
+                          CUIT: {p.afipCuit || "S/D"}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <div className="pt-4 border-t border-white/5 flex justify-center">
+                <button
+                  onClick={() => {
+                    setShowStartupSelector(false);
+                    setShowWizard(true);
+                  }}
+                  className="flex items-center gap-2 py-2.5 px-6 border border-dashed border-primary/30 hover:border-primary text-primary hover:bg-primary/10 rounded-xl text-[9px] uppercase font-bold tracking-widest transition-all cursor-pointer"
+                >
+                  + AÑADIR NUEVO CONTRIBUYENTE
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </div>
       )}
       {/* Background Glows for Organic Glassmorphism */}
       <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tr from-violet-600/10 to-indigo-600/10 blur-[120px] pointer-events-none z-0"></div>

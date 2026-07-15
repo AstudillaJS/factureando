@@ -73,6 +73,53 @@ export function readDb() {
     if (!parsed.profiles) parsed.profiles = [];
     if (parsed.activeProfileId === undefined) parsed.activeProfileId = '';
 
+    // AUTO-RECUPERACIÓN DE BARBERÍA: Si la barbería no existe en perfiles, la creamos y re-asignamos sus facturas
+    if (parsed.profiles && !parsed.profiles.some((p: any) => p.id === "20369106539" || p.afipCuit === "20369106539")) {
+      console.log("[RESTAURACIÓN] Recuperando perfil de Barbería (Mauro Joaquin Recalde)...");
+      const barberProfile = {
+        id: "20369106539",
+        businessName: "Mauro Joaquin Recalde",
+        afipCuit: "20369106539",
+        monotributoCategory: "A",
+        puntoVenta: 2,
+        afipCrtPath: "C:\\Users\\astud\\AppData\\Roaming\\Factureando\\certs\\Factureando_2efead313992519e.crt",
+        afipKeyPath: "C:\\Users\\astud\\AppData\\Roaming\\Factureando\\certs\\privada.key",
+        afipProduction: true,
+        afipToken: "5fOgfQn4qAMJQAEYMyGodDpz3QieOwJG2I8JANqtqfZdHJOaAfvTvSxF2940Uxyn",
+        mpToken: "APP_USR-5415027657528639-052018-a58e9ea24dec09713cfed34890b83546-1270276327",
+        invoiceLogo: "",
+        themeColor: "#ff007f",
+        theme: "cyberpunk",
+        domicilioComercial: "URQUIZA 1589",
+        fechaInscripcion: "01/09/2020",
+        pdfColorPalette: "slate",
+        posProducts: [
+          { id: 'corteCabello', name: 'Corte de Cabello', price: 22000 },
+          { id: 'perfiladoCejas', name: 'Perfilado de Cejas', price: 15000 },
+          { id: 'recorteBarba', name: 'Recorte de Barba', price: 22000 },
+          { id: 'afeitadoTradicional', name: 'Afeitado Tradicional', price: 22000 },
+          { id: 'completoDeluxe', name: 'Completo Deluxe', price: 44000 },
+          { id: 'cortePerfilado', name: 'Corte + Perfilado', price: 33000 }
+        ]
+      };
+      
+      parsed.profiles.push(barberProfile);
+      
+      // Re-asignar facturas históricas que tengan descripción de barbería
+      if (Array.isArray(parsed.invoices)) {
+        parsed.invoices = parsed.invoices.map((inv: any) => {
+          if (inv.description && inv.description.toLowerCase().includes("barber")) {
+            return { ...inv, profileId: "20369106539" };
+          }
+          return inv;
+        });
+      }
+      
+      // Escribir cambios en la DB de inmediato
+      fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
+      console.log("[RESTAURACIÓN] Perfil de Barbería restaurado exitosamente en db.json.");
+    }
+
     return parsed;
   } catch (error) {
     console.error('Error reading DB:', error);
