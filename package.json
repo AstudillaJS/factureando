@@ -1,7 +1,7 @@
 {
   "name": "factureando",
   "private": true,
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Sistema de Facturación Automática para Monotributistas",
   "main": "electron-main.cjs",
   "author": "AstudillaJS",
@@ -34,7 +34,7 @@
       "target": [
         "nsis"
       ],
-      "icon": "public/lynx-icon.png"
+      "icon": "public/app-icon.png"
     },
     "nsis": {
       "oneClick": false,

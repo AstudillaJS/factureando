@@ -12,7 +12,7 @@ let mainWindow;
 let expressServer;
 
 function createWindow() {
-  const iconPath = path.join(__dirname, 'public', 'lynx-icon.png');
+  const iconPath = path.join(__dirname, 'public', 'app-icon.png');
   const icon = require('fs').existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : undefined;
 
   mainWindow = new BrowserWindow({
