@@ -50,6 +50,11 @@ export default function InvoiceDesignSettings() {
     pdfRightColX: 110,
     pdfLogoX: 15,
     pdfLogoY: 12,
+    // Watermark
+    pdfWatermark: "",
+    pdfWatermarkOpacity: 0.08,
+    pdfWatermarkSize: 80,
+    pdfEnableWatermark: false,
   });
 
   // Load config on mount
@@ -86,6 +91,11 @@ export default function InvoiceDesignSettings() {
           pdfRightColX: data.pdfRightColX ? Number(data.pdfRightColX) : 110,
           pdfLogoX: data.pdfLogoX ? Number(data.pdfLogoX) : 15,
           pdfLogoY: data.pdfLogoY ? Number(data.pdfLogoY) : 12,
+          // Watermark
+          pdfWatermark: data.pdfWatermark || "",
+          pdfWatermarkOpacity: data.pdfWatermarkOpacity ? Number(data.pdfWatermarkOpacity) : 0.08,
+          pdfWatermarkSize: data.pdfWatermarkSize ? Number(data.pdfWatermarkSize) : 80,
+          pdfEnableWatermark: data.pdfEnableWatermark === true,
         }));
       })
       .catch(console.error);
@@ -161,6 +171,20 @@ export default function InvoiceDesignSettings() {
     reader.onload = (event) => {
       if (event.target?.result) {
         setSettings(prev => ({ ...prev, pdfLynxLogo: event.target.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle watermark change
+  const handleWatermarkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setSettings(prev => ({ ...prev, pdfWatermark: event.target.result as string }));
       }
     };
     reader.readAsDataURL(file);
@@ -469,6 +493,80 @@ export default function InvoiceDesignSettings() {
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Marca de Agua de Fondo */}
+                <div className="border border-primary/10 p-4 rounded bg-primary/2">
+                  <h3 className="text-xs font-black tracking-wider text-primary uppercase mb-4">MARCA DE AGUA DE FONDO (FONDO DE LA HOJA)</h3>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div className="sm:col-span-2">
+                      <label className="flex items-center gap-2 text-[10px] text-primary/70 uppercase tracking-widest font-bold cursor-pointer mb-2">
+                        <input
+                          type="checkbox"
+                          className="accent-primary w-4 h-4 cursor-pointer"
+                          checked={settings.pdfEnableWatermark}
+                          onChange={(e) => handleInputChange('pdfEnableWatermark', e.target.checked)}
+                        />
+                        HABILITAR MARCA DE AGUA DE FONDO (CENTRO)
+                      </label>
+                    </div>
+
+                    {settings.pdfEnableWatermark && (
+                      <>
+                        <div>
+                          <label className="text-[10px] text-primary/70 uppercase tracking-widest block font-bold mb-2">ANCHO DE LA MARCA ({settings.pdfWatermarkSize} mm)</label>
+                          <input 
+                            type="range"
+                            min="30"
+                            max="150"
+                            className="w-full accent-primary mt-1"
+                            value={settings.pdfWatermarkSize}
+                            onChange={(e) => handleInputChange('pdfWatermarkSize', Number(e.target.value))}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] text-primary/70 uppercase tracking-widest block font-bold mb-2">OPACIDAD DE LA MARCA ({(settings.pdfWatermarkOpacity * 100).toFixed(0)}%)</label>
+                          <input 
+                            type="range"
+                            min="0.02"
+                            max="0.30"
+                            step="0.01"
+                            className="w-full accent-primary mt-1"
+                            value={settings.pdfWatermarkOpacity}
+                            onChange={(e) => handleInputChange('pdfWatermarkOpacity', Number(e.target.value))}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {settings.pdfEnableWatermark && (
+                    <div className="flex gap-2">
+                      <div className="border-2 border-dashed border-primary/20 rounded p-4 text-center hover:bg-primary/5 transition-colors relative cursor-pointer flex-1">
+                        <input 
+                          type="file" 
+                          accept="image/png, image/jpeg" 
+                          onChange={handleWatermarkChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <Upload className="mx-auto mb-1 text-primary/50" size={20} />
+                        <p className="text-[10px] text-primary font-bold uppercase">Subir Imagen de Marca de Agua de Fondo</p>
+                        {settings.pdfWatermark && <p className="text-[9px] text-green-500 font-mono mt-1 uppercase">✓ Marca de agua cargada</p>}
+                      </div>
+
+                      {settings.pdfWatermark && (
+                        <button 
+                          type="button" 
+                          onClick={() => handleInputChange('pdfWatermark', '')}
+                          className="os-button border-red-500/20 text-red-500 hover:bg-red-500/10 text-xs px-3"
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
               </div>

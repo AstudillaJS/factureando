@@ -64,6 +64,12 @@ export const generateInvoicePDF = async (invoiceData: any, configData: any) => {
   const lynxLogoSizeWidth = configData.pdfLynxSize ? Number(configData.pdfLynxSize) : 25; // mm
   const lynxLogoOpacity = configData.pdfLynxOpacity ? Number(configData.pdfLynxOpacity) : 0.08;
 
+  // Custom watermark config
+  const watermarkBase64 = configData.pdfWatermark || "";
+  const watermarkOpacity = configData.pdfWatermarkOpacity ? Number(configData.pdfWatermarkOpacity) : 0.08;
+  const watermarkSizeWidth = configData.pdfWatermarkSize ? Number(configData.pdfWatermarkSize) : 80;
+  const enableWatermark = configData.pdfEnableWatermark === true;
+
   // Ajustes de Maquetación (Anti-superposiciones)
   const headerHeight = configData.pdfHeaderHeight ? Number(configData.pdfHeaderHeight) : 55;
   const companyNameSize = configData.pdfCompanyNameSize ? Number(configData.pdfCompanyNameSize) : 16;
@@ -131,6 +137,33 @@ export const generateInvoicePDF = async (invoiceData: any, configData: any) => {
       } catch (e) {}
     } catch (e) {
       console.error("Error rendering LYNX watermark:", e);
+    }
+  }
+
+  // --- Dibujar Marca de Agua de Fondo Personalizada ---
+  if (watermarkBase64 && enableWatermark) {
+    try {
+      const watermarkRatio = await getImageRatio(watermarkBase64);
+      const watermarkHeight = watermarkSizeWidth * watermarkRatio;
+      
+      const cx = (pageWidth / 2) - (watermarkSizeWidth / 2);
+      const cy = (pageHeight / 2) - (watermarkHeight / 2);
+      
+      try {
+        const gState = new (doc as any).GState({ opacity: watermarkOpacity });
+        doc.saveGraphicsState();
+        doc.setGState(gState);
+      } catch (e) {
+        console.warn("jsPDF GState not supported, drawing watermark without transparency.");
+      }
+      
+      doc.addImage(watermarkBase64, 'PNG', cx, cy, watermarkSizeWidth, watermarkHeight);
+      
+      try {
+        doc.restoreGraphicsState();
+      } catch (e) {}
+    } catch (e) {
+      console.error("Error rendering custom watermark:", e);
     }
   }
 
