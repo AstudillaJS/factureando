@@ -1,7 +1,7 @@
 {
   "name": "factureando",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.2.2",
   "description": "Sistema de Facturación Automática para Monotributistas",
   "main": "electron-main.cjs",
   "author": "AstudillaJS",

@@ -8,6 +8,8 @@ export default function FiscalCluster() {
   const [showGuide, setShowGuide] = useState(false);
   const [status, setStatus] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const [config, setConfig] = useState<any>({});
+  const [categories, setCategories] = useState<any[]>([]);
+  const [showLimitsModal, setShowLimitsModal] = useState(false);
 
   const fetchConfig = async () => {
     try {
@@ -19,8 +21,21 @@ export default function FiscalCluster() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/afip/categories");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.categories)) {
+        setCategories(data.categories);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
+    fetchCategories();
   }, []);
 
   const handleFileUpload = async (type: 'crt' | 'key', e: React.ChangeEvent<HTMLInputElement>) => {
@@ -309,13 +324,36 @@ export default function FiscalCluster() {
               CATEGORÍA ACTUAL (AFIP) <span className="text-red-500">*</span>
             </label>
             <select 
-              value={config.categoriaMonotributo || 'Categoría A (Hasta $6.450.000,00)'}
+              value={config.categoriaMonotributo || 'A'}
               onChange={(e) => updateField('categoriaMonotributo', e.target.value)}
-              className="os-input font-bold tracking-tight bg-black cursor-pointer appearance-none"
+              className="os-input font-bold tracking-tight bg-black cursor-pointer appearance-none uppercase"
             >
-              <option value="Categoría A (Hasta $6.450.000,00)">Categoría A (Hasta $6.450.000,00)</option>
-              <option value="Categoría B">Categoría B</option>
-              <option value="Categoría C">Categoría C</option>
+              {(categories.length > 0 ? categories : [
+                { category: 'A', limit: 8992597.87 },
+                { category: 'B', limit: 13175201.52 },
+                { category: 'C', limit: 18473166.15 },
+                { category: 'D', limit: 22934610.05 },
+                { category: 'E', limit: 26977793.60 },
+                { category: 'F', limit: 33809379.57 },
+                { category: 'G', limit: 40431835.35 },
+                { category: 'H', limit: 61344853.64 },
+                { category: 'I', limit: 68664410.05 },
+                { category: 'J', limit: 78632948.76 },
+                { category: 'K', limit: 94805682.90 }
+              ]).map((cat: any) => {
+                const limitValue = config.customCategoryLimits?.[cat.category] ?? cat.limit;
+                const formattedLimit = new Intl.NumberFormat("es-AR", {
+                  style: "currency",
+                  currency: "ARS",
+                  maximumFractionDigits: 0
+                }).format(limitValue);
+                
+                return (
+                  <option key={cat.category} value={cat.category}>
+                    CATEGORÍA {cat.category} (HASTA {formattedLimit})
+                  </option>
+                );
+              })}
             </select>
           </div>
           <div className="col-span-2">
@@ -336,7 +374,10 @@ export default function FiscalCluster() {
             GUARDAR CONFIGURACIÓN FISCAL
           </button>
           
-          <button className="text-[10px] text-primary uppercase tracking-widest border-b border-dashed border-primary pb-0.5 flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <button 
+            onClick={() => setShowLimitsModal(true)}
+            className="text-[10px] text-primary uppercase tracking-widest border-b border-dashed border-primary pb-0.5 flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+          >
             <Edit3 size={14} /> CONFIGURAR LÍMITES DE CATEGORÍAS
           </button>
         </div>
@@ -396,6 +437,110 @@ export default function FiscalCluster() {
             {generating ? "GENERANDO..." : "GENERAR KEY Y PEDIDO (CSR)"}
           </button>
         </div>
+
+        {/* Modal para configurar límites personalizados de monotributo */}
+        <AnimatePresence>
+          {showLimitsModal && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, y: 10 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 10 }}
+                className="os-card max-w-lg w-full border-primary/40 p-6 bg-black/90 relative shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-violet-600"></div>
+                <button 
+                  onClick={() => setShowLimitsModal(false)}
+                  className="absolute top-4 right-4 text-gray-500 hover:text-white cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+                
+                <h3 className="text-xs font-black text-primary tracking-widest uppercase mb-1.5 flex items-center gap-2">
+                  LÍMITES DE CATEGORÍAS (MONOTRIBUTO)
+                </h3>
+                <p className="text-[9px] text-gray-500 mb-6 font-mono uppercase tracking-tight">
+                  Ajustá los límites de facturación máxima anual para cada categoría.
+                </p>
+                
+                <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-2 mb-6 font-mono text-[11px]">
+                  {(categories.length > 0 ? categories : [
+                    { category: 'A', limit: 8992597.87 },
+                    { category: 'B', limit: 13175201.52 },
+                    { category: 'C', limit: 18473166.15 },
+                    { category: 'D', limit: 22934610.05 },
+                    { category: 'E', limit: 26977793.60 },
+                    { category: 'F', limit: 33809379.57 },
+                    { category: 'G', limit: 40431835.35 },
+                    { category: 'H', limit: 61344853.64 },
+                    { category: 'I', limit: 68664410.05 },
+                    { category: 'J', limit: 78632948.76 },
+                    { category: 'K', limit: 94805682.90 }
+                  ]).map((cat) => {
+                    const currentLimit = config.customCategoryLimits?.[cat.category] ?? cat.limit;
+                    return (
+                      <div key={cat.category} className="flex items-center justify-between gap-4 p-2 border border-white/5 rounded-xl bg-white/5 hover:border-primary/20 transition-all">
+                        <span className="font-bold text-primary">CATEGORÍA {cat.category}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">$</span>
+                          <input
+                            type="number"
+                            className="bg-black/50 border border-white/10 px-3 py-1 rounded-lg text-right w-36 text-xs text-white font-mono focus:border-primary focus:outline-none"
+                            value={currentLimit}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              const newLimits = { ...config.customCategoryLimits };
+                              newLimits[cat.category] = val;
+                              updateField("customCategoryLimits", newLimits);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="flex justify-end gap-3 border-t border-white/5 pt-4">
+                  <button
+                    onClick={() => {
+                      const officialLimits = (categories.length > 0 ? categories : [
+                        { category: 'A', limit: 8992597.87 },
+                        { category: 'B', limit: 13175201.52 },
+                        { category: 'C', limit: 18473166.15 },
+                        { category: 'D', limit: 22934610.05 },
+                        { category: 'E', limit: 26977793.60 },
+                        { category: 'F', limit: 33809379.57 },
+                        { category: 'G', limit: 40431835.35 },
+                        { category: 'H', limit: 61344853.64 },
+                        { category: 'I', limit: 68664410.05 },
+                        { category: 'J', limit: 78632948.76 },
+                        { category: 'K', limit: 94805682.90 }
+                      ]).reduce((acc, c) => {
+                        acc[c.category] = c.limit;
+                        return acc;
+                      }, {} as any);
+                      updateField("customCategoryLimits", officialLimits);
+                    }}
+                    className="text-[9px] border border-dashed border-gray-600 px-4 py-2 uppercase font-bold text-gray-400 hover:border-white hover:text-white transition-colors cursor-pointer"
+                  >
+                    RESETEAR A OFICIALES
+                  </button>
+                  <button
+                    onClick={() => setShowLimitsModal(false)}
+                    className="text-[9px] bg-primary text-black px-6 py-2 uppercase font-bold hover:opacity-90 transition-opacity cursor-pointer"
+                  >
+                    APLICAR Y CERRAR
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

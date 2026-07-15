@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Shield, Sparkles, Building2, User, Key, CheckCircle, Upload, Play, Palette } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
@@ -20,6 +20,19 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
   const [crtPath, setCrtPath] = useState("");
   const [keyPath, setKeyPath] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [existingProfiles, setExistingProfiles] = useState<any[]>([]);
+  const [importFromProfileId, setImportFromProfileId] = useState<string>("none");
+
+  useEffect(() => {
+    fetch("/api/profiles")
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setExistingProfiles(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   // Extraer color dominante del logo
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,6 +90,17 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
   const handleFinish = async () => {
     try {
+      let importedProducts: any[] = [];
+      let importedPrices: any = null;
+      
+      if (importFromProfileId && importFromProfileId !== "none") {
+        const sourceProfile = existingProfiles.find(p => p.id === importFromProfileId);
+        if (sourceProfile) {
+          importedProducts = sourceProfile.posProducts || [];
+          importedPrices = sourceProfile.barberPrices || null;
+        }
+      }
+
       const payload = {
         businessName,
         afipCuit: cuit,
@@ -85,10 +109,16 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
         invoiceLogo,
         themeColor,
         afipProduction: !useHomologation,
-        theme: themeColor ? "brand" : "cyberpunk"
+        theme: themeColor ? "brand" : "cyberpunk",
+        posProducts: importedProducts,
+        barberPrices: importedPrices
       };
 
-      const res = await fetch("/api/config", {
+      // Si ya hay perfiles creados, llamamos a POST /api/profiles (alta de contribuyente nuevo)
+      // de lo contrario, llamamos a POST /api/config (configuración inicial del primer perfil)
+      const endpoint = existingProfiles.length > 0 ? "/api/profiles" : "/api/config";
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -97,7 +127,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
       if (data.success) {
         onComplete(payload);
       } else {
-        setStatus("ERROR AL GUARDAR LA CONFIGURACIÓN INICIAL");
+        setStatus(data.message || "ERROR AL GUARDAR EL CONTRIBUYENTE");
       }
     } catch (e) {
       setStatus("ERROR DE CONEXIÓN CON EL SERVIDOR LOCAL");
@@ -261,6 +291,31 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                   </select>
                   <p className="text-[9px] text-gray-500 font-mono mt-1.5">* Requerida para verificar tus escalas y límites de ingresos automáticos.</p>
                 </div>
+
+                {existingProfiles.length > 0 && (
+                  <div className="p-4 border border-primary/20 rounded-xl bg-primary/5 space-y-3">
+                    <div>
+                      <label className="text-[10px] text-primary/80 uppercase tracking-widest font-bold mb-1.5 block">
+                        IMPORTAR PRODUCTOS Y PRECIOS (OPCIONAL)
+                      </label>
+                      <select
+                        className="os-input font-mono text-xs cursor-pointer"
+                        value={importFromProfileId}
+                        onChange={e => setImportFromProfileId(e.target.value)}
+                      >
+                        <option value="none">NO, EMPEZAR CON DATOS EN CERO (NUEVO CONTRIBUYENTE)</option>
+                        {existingProfiles.map(p => (
+                          <option key={p.id} value={p.id}>
+                            IMPORTAR DESDE: {p.businessName.toUpperCase()} (CUIT: {p.afipCuit})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[9px] text-gray-500 font-mono mt-1">
+                        * Si elegís esta opción, copiaremos todos los artículos del catálogo del contribuyente seleccionado. De lo contrario, iniciarás con el POS en cero.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
