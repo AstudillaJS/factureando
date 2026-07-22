@@ -20,6 +20,7 @@ import InvoiceDesignSettings from "./components/InvoiceDesignSettings";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import OnboardingWizard from "./components/OnboardingWizard";
 import ProfileSwitcher from "./components/ProfileSwitcher";
+import InflationSettings from "./components/InflationSettings";
 
 type Tabs = "dashboard" | "billing" | "config";
 
@@ -272,6 +273,7 @@ function TabRouter({ activeTab }: { activeTab: Tabs }) {
           <FiscalCluster />
           <InvoiceDesignSettings />
           <ClientManagement />
+          <InflationSettings />
           <SystemCore />
           <ErrorLog />
         </motion.div>

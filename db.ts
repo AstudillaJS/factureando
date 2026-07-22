@@ -19,7 +19,15 @@ const defaultData = {
   profiles: [], // Array de perfiles de contribuyentes
   activeProfileId: '', // ID (CUIT) del perfil de contribuyente activo
   invoices: [],
-  clients: []
+  clients: [],
+  inflationRates: [
+    { year: 2026, month: 1, rate: 6.0 },
+    { year: 2026, month: 2, rate: 5.5 },
+    { year: 2026, month: 3, rate: 4.8 },
+    { year: 2026, month: 4, rate: 4.2 },
+    { year: 2026, month: 5, rate: 3.8 },
+    { year: 2026, month: 6, rate: 3.5 },
+  ]
 };
 
 // Initialize DB if not exists
@@ -117,7 +125,18 @@ export function readDb() {
       
       // Escribir cambios en la DB de inmediato
       fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
-      console.log("[RESTAURACIÓN] Perfil de Barbería restaurado exitosamente en db.json.");
+    }
+
+    if (!parsed.inflationRates) {
+      parsed.inflationRates = [
+        { year: 2026, month: 1, rate: 6.0 },
+        { year: 2026, month: 2, rate: 5.5 },
+        { year: 2026, month: 3, rate: 4.8 },
+        { year: 2026, month: 4, rate: 4.2 },
+        { year: 2026, month: 5, rate: 3.8 },
+        { year: 2026, month: 6, rate: 3.5 },
+      ];
+      fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
     }
 
     return parsed;
@@ -307,4 +326,28 @@ export function getInvoices() {
   
   // Retornar solo las facturas del contribuyente activo
   return (db.invoices || []).filter((inv: any) => inv.profileId === profileId);
+}
+
+export function getInflationRates() {
+  const db = readDb();
+  return db.inflationRates || [];
+}
+
+export function saveInflationRates(rates: any[]) {
+  const db = readDb();
+  db.inflationRates = rates;
+  writeDb(db);
+  return true;
+}
+
+export function getClients() {
+  const db = readDb();
+  return db.clients || [];
+}
+
+export function saveClients(clients: any[]) {
+  const db = readDb();
+  db.clients = clients;
+  writeDb(db);
+  return true;
 }

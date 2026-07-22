@@ -17,16 +17,80 @@ export default function Billing() {
   const [mpStatus, setMpStatus] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const [testingMP, setTestingMP] = useState(false);
 
+  // Nuevos estados para inflación, cuentas y repetición
+  const [clients, setClients] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [inflationRates, setInflationRates] = useState<any[]>([]);
+  const [suggestedIncrease, setSuggestedIncrease] = useState<any | null>(null);
+
+  const fetchBillingData = async () => {
+    try {
+      const resConfig = await fetch("/api/config");
+      const dataConfig = await resConfig.json();
+      if (dataConfig && dataConfig.mpToken) setMpToken(dataConfig.mpToken);
+
+      const resClients = await fetch("/api/clients");
+      const dataClients = await resClients.json();
+      if (Array.isArray(dataClients)) setClients(dataClients);
+
+      const resInvoices = await fetch("/api/invoices");
+      const dataInvoices = await resInvoices.json();
+      if (Array.isArray(dataInvoices)) setInvoices(dataInvoices);
+
+      const resInflation = await fetch("/api/inflation");
+      const dataInflation = await resInflation.json();
+      if (Array.isArray(dataInflation)) setInflationRates(dataInflation);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/config")
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.mpToken) {
-          setMpToken(data.mpToken);
-        }
-      })
-      .catch(console.error);
+    fetchBillingData();
   }, []);
+
+  useEffect(() => {
+    if (!manualForm.cuit || !manualForm.amount || Number(manualForm.amount) <= 0) {
+      setSuggestedIncrease(null);
+      return;
+    }
+
+    const amt = Number(manualForm.amount);
+    const previousInvoices = invoices.filter(
+      (inv: any) => inv.clientCuit === manualForm.cuit && Math.abs(inv.amount - amt) < 10
+    );
+
+    if (previousInvoices.length > 0) {
+      const sorted = [...previousInvoices].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const lastInvoice = sorted[0];
+
+      const lastDate = new Date(lastInvoice.date);
+      const currentDate = new Date(manualForm.date);
+      const monthsDiff = (currentDate.getFullYear() - lastDate.getFullYear()) * 12 + (currentDate.getMonth() - lastDate.getMonth());
+
+      if (monthsDiff > 0) {
+        let accumulatedInflation = 0;
+        for (let i = 0; i < monthsDiff; i++) {
+          const checkMonth = new Date(lastDate.getFullYear(), lastDate.getMonth() + i + 1, 1);
+          const rateObj = inflationRates.find(
+            (r: any) => r.year === checkMonth.getFullYear() && r.month === (checkMonth.getMonth() + 1)
+          );
+          accumulatedInflation += rateObj ? rateObj.rate : 4.0;
+        }
+
+        if (accumulatedInflation > 0) {
+          const suggestedAmount = amt * (1 + accumulatedInflation / 100);
+          setSuggestedIncrease({
+            lastDate: lastInvoice.date,
+            rate: accumulatedInflation.toFixed(1),
+            suggested: Math.round(suggestedAmount)
+          });
+          return;
+        }
+      }
+    }
+    setSuggestedIncrease(null);
+  }, [manualForm.amount, manualForm.cuit, manualForm.date, invoices, inflationRates]);
 
   const testMPConnection = async () => {
     if (!mpToken) {
@@ -206,6 +270,48 @@ export default function Billing() {
                 {method === 'manual' && (
                   <div className="space-y-4">
                     <div>
+                      <label className="text-[8px] text-primary/60 uppercase font-mono block mb-1 px-1">Seleccionar Cliente Registrado</label>
+                      <select 
+                        className="os-input font-bold tracking-tight bg-black cursor-pointer text-xs"
+                        onChange={(e) => {
+                          const c = clients.find(cl => cl.cuit === e.target.value);
+                          if (c) {
+                            setManualForm(prev => ({ ...prev, client: c.name, cuit: c.cuit }));
+                          } else {
+                            setManualForm(prev => ({ ...prev, client: '', cuit: '' }));
+                          }
+                        }}
+                        value={manualForm.cuit}
+                      >
+                        <option value="">-- SELECCIONAR CLIENTE (OPCIONAL) --</option>
+                        {clients.map(c => (
+                          <option key={c.id} value={c.cuit}>{c.name} (CUIT: {c.cuit})</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <input 
+                          type="text" 
+                          placeholder="CUIT DESTINATARIO" 
+                          className="os-input font-mono"
+                          value={manualForm.cuit}
+                          onChange={e => setManualForm({...manualForm, cuit: e.target.value.replace(/[^0-9]/g, '')})}
+                        />
+                      </div>
+                      <div>
+                        <input 
+                          type="text" 
+                          placeholder="NOMBRE / RAZÓN SOCIAL" 
+                          className="os-input"
+                          value={manualForm.client}
+                          onChange={e => setManualForm({...manualForm, client: e.target.value.toUpperCase()})}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
                       <input 
                         type="text" 
                         placeholder="CONCEPTO / SERVICIO" 
@@ -215,6 +321,7 @@ export default function Billing() {
                       />
                       {manualErrors.concept && <span className="text-[9px] text-red-500 font-bold uppercase mt-1 block px-2">{manualErrors.concept}</span>}
                     </div>
+
                     <div>
                       <input 
                         type="number" 
@@ -225,6 +332,23 @@ export default function Billing() {
                       />
                       {manualErrors.amount && <span className="text-[9px] text-red-500 font-bold uppercase mt-1 block px-2">{manualErrors.amount}</span>}
                     </div>
+
+                    {suggestedIncrease && (
+                      <div className="p-3 border border-amber-500/30 bg-amber-500/5 text-amber-500 rounded-xl space-y-1 text-[10px] font-mono leading-relaxed">
+                        <span className="font-bold uppercase block text-primary">⚠️ ALERTA DE AJUSTE POR INFLACIÓN</span>
+                        <span>Mismo importe facturado el {suggestedIncrease.lastDate}.</span>
+                        <span className="block text-white">Inflación acumulada: <span className="text-amber-500 font-bold">+{suggestedIncrease.rate}%</span></span>
+                        <span className="block mt-1 font-bold text-white">Importe sugerido: <span className="text-primary font-black">${suggestedIncrease.suggested.toLocaleString('es-AR')}</span></span>
+                        <button 
+                          type="button"
+                          onClick={() => setManualForm(prev => ({ ...prev, amount: suggestedIncrease.suggested.toString() }))}
+                          className="mt-2 text-[9px] uppercase bg-primary text-black font-black px-3 py-1 rounded hover:opacity-90 transition-opacity cursor-pointer block"
+                        >
+                          Aplicar Ajuste Sugerido
+                        </button>
+                      </div>
+                    )}
+
                     <div>
                       <label className="text-[8px] text-primary/60 uppercase font-mono block mb-1 px-1">Fecha de Emisión de Factura</label>
                       <input 
@@ -243,17 +367,57 @@ export default function Billing() {
                         {draftStatus.msg}
                       </motion.div>
                     )}
-                    <button onClick={handleGenerateDraft} className="os-button w-full py-4">GENERAR BORRADOR</button>
+                    <button onClick={handleGenerateDraft} className="os-button w-full py-4 cursor-pointer">GENERAR BORRADOR</button>
                   </div>
                 )}
               </div>
-              <div className="bg-black/50 p-6 border border-primary/10 font-mono text-[10px] text-gray-500 leading-relaxed">
-                <div className="flex justify-between border-b border-primary/5 pb-2 mb-4">
-                  <span className="text-primary font-bold tracking-widest">ESTADO DEL KERNEL</span>
-                  <span className="text-green-500">ESPERANDO PAYLOAD</span>
+              
+              {method === 'manual' ? (
+                <div className="bg-black/50 p-6 border border-primary/10 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between border-b border-primary/5 pb-2 mb-4 font-mono text-[10px]">
+                      <span className="text-primary font-bold tracking-widest uppercase italic">HISTORIAL PARA REPETIR</span>
+                      <span className="text-gray-500">ÚLTIMAS EMITIDAS</span>
+                    </div>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                      {invoices.slice(0, 5).map((inv: any) => (
+                        <div key={inv.id} className="p-2.5 border border-white/5 bg-white/5 rounded-xl flex items-center justify-between font-mono text-[9px] leading-relaxed">
+                          <div className="min-w-0 flex-1 mr-2">
+                            <span className="font-bold text-white block uppercase truncate">{inv.description || 'Sin concepto'}</span>
+                            <span className="text-gray-500 block mt-0.5">${inv.amount?.toLocaleString('es-AR')} | {inv.clientName}</span>
+                          </div>
+                          <button
+                            onClick={() => setManualForm({
+                              concept: inv.description || '',
+                              amount: (inv.amount || '').toString(),
+                              client: inv.clientName || '',
+                              cuit: inv.clientCuit || '',
+                              date: new Date().toISOString().split('T')[0]
+                            })}
+                            className="text-[9px] font-bold border border-primary/30 text-primary hover:bg-primary hover:text-black transition-all px-2.5 py-1 uppercase rounded-lg cursor-pointer"
+                          >
+                            REPETIR
+                          </button>
+                        </div>
+                      ))}
+                      {invoices.length === 0 && (
+                        <p className="text-[10px] text-gray-600 italic text-center py-12">No hay facturas previas registradas</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-white/5 text-[9px] text-gray-500 font-mono">
+                    {`> KERNEL_STATE: STABLE\n> SYSTEM_ADAPTER: READY`}
+                  </div>
                 </div>
-                {`> BOOTING ${method.toUpperCase()} ADAPTER...\n> LOADED CONFIGURATION\n> READY FOR INGESTION`}
-              </div>
+              ) : (
+                <div className="bg-black/50 p-6 border border-primary/10 font-mono text-[10px] text-gray-500 leading-relaxed rounded-xl">
+                  <div className="flex justify-between border-b border-primary/5 pb-2 mb-4">
+                    <span className="text-primary font-bold tracking-widest">ESTADO DEL KERNEL</span>
+                    <span className="text-green-500">ESPERANDO PAYLOAD</span>
+                  </div>
+                  {`> BOOTING ${method.toUpperCase()} ADAPTER...\n> LOADED CONFIGURATION\n> READY FOR INGESTION`}
+                </div>
+              )}
             </div>
           </div>
         )}

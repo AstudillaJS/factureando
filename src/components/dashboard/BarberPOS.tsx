@@ -28,8 +28,11 @@ export default function BarberPOS() {
   const [customDescription, setCustomDescription] = useState("");
   const [status, setStatus] = useState<{msg: string, type: 'success'|'error'} | null>(null);
 
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [inflationRates, setInflationRates] = useState<any[]>([]);
+  const [suggestedIncrease, setSuggestedIncrease] = useState<any | null>(null);
+
   useEffect(() => {
-    // Cargar configuración de negocio
     fetch("/api/config")
       .then(res => res.json())
       .then(data => {
@@ -47,14 +50,29 @@ export default function BarberPOS() {
       })
       .catch(console.error);
 
-    // Cargar clientes para el selector del POS
     fetch("/api/clients")
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setClients(data);
       })
       .catch(console.error);
+
+    fetch("/api/invoices")
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setInvoices(data);
+      })
+      .catch(console.error);
+
+    fetch("/api/inflation")
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setInflationRates(data);
+      })
+      .catch(console.error);
   }, []);
+
+
 
   const businessName = config.businessName || "Barbería";
   const products = config.posProducts || DEFAULT_PRODUCTS;
@@ -97,6 +115,49 @@ export default function BarberPOS() {
   const clearCart = () => setCart([]);
 
   const total = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
+
+  useEffect(() => {
+    if (selectedClientCuit === "0" || total <= 0) {
+      setSuggestedIncrease(null);
+      return;
+    }
+
+    const amt = total;
+    const previousInvoices = invoices.filter(
+      (inv: any) => inv.clientCuit === selectedClientCuit && Math.abs(inv.amount - amt) < 10
+    );
+
+    if (previousInvoices.length > 0) {
+      const sorted = [...previousInvoices].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const lastInvoice = sorted[0];
+
+      const lastDate = new Date(lastInvoice.date);
+      const currentDate = new Date(date);
+      const monthsDiff = (currentDate.getFullYear() - lastDate.getFullYear()) * 12 + (currentDate.getMonth() - lastDate.getMonth());
+
+      if (monthsDiff > 0) {
+        let accumulatedInflation = 0;
+        for (let i = 0; i < monthsDiff; i++) {
+          const checkMonth = new Date(lastDate.getFullYear(), lastDate.getMonth() + i + 1, 1);
+          const rateObj = inflationRates.find(
+            (r: any) => r.year === checkMonth.getFullYear() && r.month === (checkMonth.getMonth() + 1)
+          );
+          accumulatedInflation += rateObj ? rateObj.rate : 4.0;
+        }
+
+        if (accumulatedInflation > 0) {
+          const suggestedAmount = amt * (1 + accumulatedInflation / 100);
+          setSuggestedIncrease({
+            lastDate: lastInvoice.date,
+            rate: accumulatedInflation.toFixed(1),
+            suggested: Math.round(suggestedAmount)
+          });
+          return;
+        }
+      }
+    }
+    setSuggestedIncrease(null);
+  }, [total, selectedClientCuit, date, invoices, inflationRates]);
 
   const handleInvoiceSubmit = async (methodType: 'draft' | 'afip') => {
     if (cart.length === 0) {
@@ -327,6 +388,15 @@ export default function BarberPOS() {
                 onChange={e => setCustomDescription(e.target.value)}
               />
             </div>
+
+            {suggestedIncrease && (
+              <div className="p-3 border border-amber-500/30 bg-amber-500/5 text-amber-500 rounded-xl space-y-1 text-[9px] font-mono leading-relaxed">
+                <span className="font-bold uppercase block text-primary">⚠️ ALERTA DE AJUSTE POR INFLACIÓN</span>
+                <span>Mismo importe cobrado el {suggestedIncrease.lastDate}.</span>
+                <span className="block text-white">Inflación acumulada: <span className="text-amber-500 font-bold">+{suggestedIncrease.rate}%</span></span>
+                <span className="block mt-1 font-bold text-white">Sugerido para mantener valor: <span className="text-primary font-black">${suggestedIncrease.suggested.toLocaleString('es-AR')}</span></span>
+              </div>
+            )}
 
             {/* Total */}
             <div className="flex justify-between items-center py-2 bg-primary/[0.02] border border-primary/5 rounded-xl px-4">

@@ -5,7 +5,7 @@ import multer from "multer";
 import fs from "fs";
 import forge from "node-forge";
 import { Arca } from "@arcasdk/core";
-import { getActiveProfile, updateActiveProfile, getProfiles, setActiveProfileId, addProfile, deleteProfile, addInvoice, getInvoices, readDb, writeDb, DATA_DIR } from "./db";
+import { getActiveProfile, updateActiveProfile, getProfiles, setActiveProfileId, addProfile, deleteProfile, addInvoice, getInvoices, readDb, writeDb, DATA_DIR, getInflationRates, saveInflationRates, getClients, saveClients } from "./db";
 
 dotenv.config();
 
@@ -134,6 +134,40 @@ export async function startServer() {
     } catch (error) {
       res.status(500).json({ success: false, message: "Error al eliminar factura." });
     }
+  });
+
+  app.get("/api/inflation", (req, res) => {
+    res.json(getInflationRates());
+  });
+
+  app.post("/api/inflation", (req, res) => {
+    saveInflationRates(req.body);
+    res.json({ success: true, message: "Tasas de inflación actualizadas." });
+  });
+
+  app.get("/api/clients", (req, res) => {
+    res.json(getClients());
+  });
+
+  app.post("/api/clients", (req, res) => {
+    const clients = getClients();
+    const newClient = req.body;
+    const index = clients.findIndex((c: any) => c.cuit === newClient.cuit);
+    if (index >= 0) {
+      clients[index] = { ...clients[index], ...newClient };
+    } else {
+      newClient.id = Date.now();
+      clients.push(newClient);
+    }
+    saveClients(clients);
+    res.json({ success: true, client: newClient });
+  });
+
+  app.delete("/api/clients/:id", (req, res) => {
+    const clients = getClients();
+    const cleanClients = clients.filter((c: any) => c.id !== Number(req.params.id) && c.id !== req.params.id);
+    saveClients(cleanClients);
+    res.json({ success: true });
   });
 
   // --- Endpoints de AFIP --- //
