@@ -109,3 +109,33 @@ Este comando compila el bundle de producción de React, empaqueta el servidor Ex
 2.  Si la encuentra, descarga el instalador en segundo plano de manera imperceptible.
 3.  Una vez completada la descarga, lanza un cuadro de diálogo al usuario invitándole a reiniciar para instalar la actualización.
 4.  Al aceptar, la aplicación se cierra, instala la nueva versión en segundos y se vuelve a abrir completamente actualizada con todas las bases de datos locales intactas.
+
+---
+
+## 6. Carga y Repetición de Facturación Manual
+El módulo de facturación permite ingresar de manera directa conceptos, montos e información de CUIT para emitir borradores inmediatos o facturas en AFIP.
+1. **Historial para Repetir:** En el lateral derecho de la terminal de facturación manual, se listan los últimos 5 comprobantes emitidos.
+2. Al presionar el botón `REPETIR` sobre cualquiera de ellos, se precargan los campos correspondientes a CUIT, Razón Social, Concepto e Importe de forma instantánea.
+3. El usuario puede modificar la fecha o los datos antes de emitir la factura.
+
+## 7. Cuenta Corriente de Clientes
+La aplicación mantiene un control continuo del estado de facturación histórica por cliente.
+1. **Ingreso:** Diríjase al panel de "Gestión de Clientes".
+2. **Acción:** Presione el botón `VER CUENTA CORRIENTE` sobre el cliente deseado.
+3. **Resumen de Cuenta:** Se abrirá un panel que detalla:
+   * Nombre y CUIT del cliente.
+   * Lista detallada de todas las facturas y borradores emitidos.
+   * **Total Facturado Acumulado:** Suma en tiempo real de todos los comprobantes vinculados a ese CUIT.
+
+## 8. Alertas de Aumento por Inflación
+Para proteger el valor de las tarifas cobradas de forma recurrente, el sistema cuenta con un monitor inflacionario:
+1. **Monitoreo Automático:** Al ingresar el CUIT de un cliente en la facturación manual o seleccionarlo en la Barbería POS, el sistema verifica las últimas facturas del historial con ese mismo importe.
+2. **Cálculo de Inflación:** Si detecta facturas anteriores del mismo importe en meses previos, calcula la inflación acumulada entre la fecha de la última factura y la fecha actual.
+3. **Recomendación:** Se despliega un banner advirtiendo el tiempo transcurrido, el porcentaje acumulado de inflación y sugiriendo el **monto ajustado** correspondiente. En la facturación manual, se puede aplicar la sugerencia con un clic en **"Aplicar Ajuste Sugerido"**.
+
+## 9. Historial e Índices de Inflación
+Este módulo centraliza la tabla de coeficientes inflacionarios mensuales de la base de datos.
+1. **Acceso:** Ubicado en Configuración bajo el título "Panel de Control de Inflación".
+2. **Recopilación Automática:** Al presionar "Recopilar de Portal BCRA", la aplicación simula la consulta a las estadísticas oficiales del BCRA/INDEC para actualizar los coeficientes mensuales.
+3. **Edición Manual:** Permite cambiar y ajustar los porcentajes mensuales en los casilleros de forma directa y presionar "Guardar Índices" para persistir los cambios en la base de datos local.
+
